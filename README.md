@@ -1,2 +1,2 @@
-# rufflib-formgen
+# rufflib-formulate
 A RuffLIB library for transforming an object schema into an HTML form
