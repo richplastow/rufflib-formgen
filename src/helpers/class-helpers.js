@@ -12,15 +12,11 @@ import { toggleMinimisation, isFieldset } from './dom-helpers.js';
 // Transforms a Formulate schema into a list of steps (instructions for
 // creating HTML elements).
 export function schemaToSteps(schema, path=ID_PREFIX, depth=1) {
-    if (typeof schema._meta !== 'object' || schema._meta == null)
-        throw Error(`schema._meta is '${schema._meta}' not an object`);
-    if (typeof schema._meta.title !== 'string')
-        throw Error(`schema._meta.title is '${typeof schema._meta.title}' not 'string'`);
-    if (! /^[-_ 0-9a-z]{1,32}$/i.test(schema._meta.title))
-        throw Error(`schema._meta.title '${schema._meta.title}' fails /^[-_ 0-9a-z]{1,32}$/i`);
-    const title = schema._meta.title;
     const steps = [];
-    const fieldsetDown = { kind:'fieldsetDown', title };
+    const fieldsetDown = {
+        kind: 'fieldsetDown',
+        title: schema._meta.title,
+    };
     fieldsetDown.id = path;
     steps.push(fieldsetDown);
     let height = 1; // in lines
@@ -130,7 +126,9 @@ function _buildFieldset(step) {
 
 // Tests schemaToSteps(). @TODO
 export function testSchemaToSteps(expect, Formulate) {
-    // expect().section('schemaToSteps()');
+    expect().section('schemaToSteps()');
+
+
 }
 
 // Tests render(). @TODO

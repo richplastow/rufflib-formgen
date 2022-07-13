@@ -19,24 +19,30 @@ function testFormulateBasics(expect, Formulate) {
     // Is a class.
     expect(`typeof Formulate`, typeof Formulate).toBe('function');
 
-    // Invalid contructor arguments.
+    // Invalid constructor arguments.
     expect(`new Formulate()`,
-            new Formulate()).toHave({
-                err:`myFunction(): '$container' is not an HTMLElement` });
+            new Formulate()).toError(
+            `new Formulate(): '$container' is not an HTMLElement`);
     expect(`new Formulate($el)`,
-            new Formulate($el)).toHave({
-                err:`new Formulate(): 'identifier' is type 'undefined' not 'string'` });
+            new Formulate($el)).toError(
+            `new Formulate(): 'identifier' is type 'undefined' not 'string'`);
     expect(`new Formulate($el, '1abc')`,
-            new Formulate($el, '1abc')).toHave({
-                err:`new Formulate(): 'identifier' \"1abc\" fails /^[_a-z][_0-9a-z]*$/` });
+            new Formulate($el, '1abc')).toError(
+            `new Formulate(): 'identifier' \"1abc\" fails /^[_a-z][_0-9a-z]*$/`);
     expect(`new Formulate($el, 'abc')`,
-            new Formulate($el, 'abc')).toHave({
-                err:`new Formulate(): 'schema' is type 'undefined' not an object` });
+            new Formulate($el, 'abc')).toError(
+            `new Formulate(): 'schema' is type 'undefined' not an object`);
     expect(`new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})`,
-            new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})).toHave({
-                err:`new Formulate(): 'schema.b.kind' not recognised` });
+            new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})).toError(
+            `new Formulate(): 'schema.b.kind' not recognised`);
+    expect(`new Formulate($el, 'abc', {_meta:{}})`,
+            new Formulate($el, 'abc', {_meta:{}})).toError(
+            `new Formulate(): 'schema._meta.title' is type 'undefined' not 'string'`);
+    expect(`new Formulate($el, 'abc', {_meta:{title:''}})`,
+            new Formulate($el, 'abc', {_meta:{title:''}})).toError(
+            `new Formulate(): 'schema._meta.title' "" fails /^[-_ 0-9a-z...2}$/i`);
 
-    // Contructor arguments ok.
+    // constructor arguments ok.
     expect(`new Formulate($el, 'abc', {_meta:{title:'Abc'}})`,
             new Formulate($el, 'abc', {_meta:{title:'Abc'}})).toHave({
                 $container: $el,

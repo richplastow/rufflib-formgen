@@ -26,38 +26,38 @@
 
     <style>
         /* Normalise the styling of the Formulate sidebar and its content. */
-        .sg-sidebar{text-align:left}
-        .sg-sidebar *{user-select:none;-webkit-user-select:none;cursor:default}
-        .sg-sidebar,.sg-form,.sg-fieldset,.sg-row{margin:0;padding:0}
-        .sg-fieldset{border:none}
+        .rl-f-sidebar{text-align:left}
+        .rl-f-sidebar *{user-select:none;-webkit-user-select:none;cursor:default}
+        .rl-f-sidebar,.rl-f-form,.rl-f-fieldset,.rl-f-row{margin:0;padding:0}
+        .rl-f-fieldset{border:none}
         /* Position the sidebar and its content. */
-        /* Note that .sg-form and .sg-fieldset height are set in code. */
-        .sg-sidebar{position:fixed;top:8px;right:8px;bottom:8px;width:200px}
-        .sg-form{padding:8px 0;margin:0 0 8px 0}
-        .sg-form,.sg-fieldset{overflow:hidden;transition:height 0.2s}
-        .sg-row{display:block;padding:0 8px;height:30px}
-        .sg-title{padding:0 8px;height:30px}
-        .sg-arrow{display:inline-block}
+        /* Note that .rl-f-form and .rl-f-fieldset height are set in code. */
+        .rl-f-sidebar{position:fixed;top:8px;right:8px;bottom:8px;width:200px}
+        .rl-f-form{padding:8px 0;margin:0 0 8px 0}
+        .rl-f-form,.rl-f-fieldset{overflow:hidden;transition:height 0.2s}
+        .rl-f-row{display:block;padding:0 8px;height:30px}
+        .rl-f-title{padding:0 8px;height:30px}
+        .rl-f-arrow{display:inline-block}
         /* Indent fieldsets, and hide their content when minimised. */
-        .sg-fieldset{padding-left:8px}
-        .sg-fieldset.sg-depth-1{padding:0}
+        .rl-f-fieldset{padding-left:8px}
+        .rl-f-fieldset.rl-f-depth-1{padding:0}
         /* Colours. */
-        .sg-form{background:#111}
-        .sg-fieldset{background:#224}
-        .sg-fieldset:hover{background:#336}
-        .sg-row{background:#333}
-        .sg-row:hover{background:#666}
-        .sg-row.sg-boolean{background:#422}
-        .sg-row.sg-boolean:hover{background:#633}
+        .rl-f-form{background:#111}
+        .rl-f-fieldset{background:#224}
+        .rl-f-fieldset:hover{background:#336}
+        .rl-f-row{background:#333}
+        .rl-f-row:hover{background:#666}
+        .rl-f-row.rl-f-boolean{background:#422}
+        .rl-f-row.rl-f-boolean:hover{background:#633}
         /* Arrows and titles */
-        .sg-arrow{transform:rotate(90deg);transition:transform 0.2s}
-        .sg-fieldset.sg-min >.sg-title .sg-arrow{transform:rotate(0deg)}
-        .sg-depth-1 >.sg-title{font-weight:bold}
+        .rl-f-arrow{transform:rotate(90deg);transition:transform 0.2s}
+        .rl-f-fieldset.rl-f-min >.rl-f-title .rl-f-arrow{transform:rotate(0deg)}
+        .rl-f-depth-1 >.rl-f-title{font-weight:bold}
     </style>
 
-    <aside class="sg-sidebar">
-        <form id="form-0" class="sg-form">Loading...</form>
-        <form id="form-1" class="sg-form">Loading...</form>
+    <aside class="rl-f-sidebar">
+        <form id="form-0" class="rl-f-form">Loading...</form>
+        <form id="form-1" class="rl-f-form">Loading...</form>
     </aside>
     <pre id="log">Loading...</pre>
 

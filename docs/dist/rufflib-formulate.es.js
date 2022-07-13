@@ -827,8 +827,8 @@ Validate.prototype.string = string;
 
 /* -------------------------------- Constants ------------------------------- */
 
-const CSS_PREFIX = 'sg-'; // should have trailing '-'
-const ID_PREFIX = 'sg'; // should NOT have trailing '-'
+const CSS_PREFIX = 'rl-f-'; // should have trailing '-'
+const ID_PREFIX = 'rl-f'; // should NOT have trailing '-'
 
 // rufflib-formulate/src/helpers/dom-helpers.js
 
@@ -910,15 +910,11 @@ function _isFieldsetOrForm($el) {
 // Transforms a Formulate schema into a list of steps (instructions for
 // creating HTML elements).
 function schemaToSteps(schema, path=ID_PREFIX, depth=1) {
-    if (typeof schema._meta !== 'object' || schema._meta == null)
-        throw Error(`schema._meta is '${schema._meta}' not an object`);
-    if (typeof schema._meta.title !== 'string')
-        throw Error(`schema._meta.title is '${typeof schema._meta.title}' not 'string'`);
-    if (! /^[-_ 0-9a-z]{1,32}$/i.test(schema._meta.title))
-        throw Error(`schema._meta.title '${schema._meta.title}' fails /^[-_ 0-9a-z]{1,32}$/i`);
-    const title = schema._meta.title;
     const steps = [];
-    const fieldsetDown = { kind:'fieldsetDown', title };
+    const fieldsetDown = {
+        kind: 'fieldsetDown',
+        title: schema._meta.title,
+    };
     fieldsetDown.id = path;
     steps.push(fieldsetDown);
     let height = 1; // in lines
@@ -1028,8 +1024,9 @@ function _buildFieldset(step) {
 // Assembles the `Formulate` class.
 
 
-/* --------------------------------- Import --------------------------------- */
+/* -------------------------------- Constants ------------------------------- */
 
+const META_TITLE_RX = /^[-_ 0-9a-z]{1,32}$/i;
 const VERSION = '0.0.1';
 
 
@@ -1056,14 +1053,19 @@ const VERSION = '0.0.1';
 class Formulate {
 
     constructor($container, identifier, schema) {
-        // Validate and store the instantiation arguments.
+
+        // Validate the constructor arguments.
+        if (! ($container instanceof HTMLElement))
+            return this.error = `new Formulate(): '$container' is not an HTMLElement`;
         const v = new Validate('new Formulate()', false);
-        if (!($container instanceof HTMLElement))
-            return this.err = `myFunction(): '$container' is not an HTMLElement`;
-        if (! v.string(identifier, 'identifier', /^[_a-z][_0-9a-z]*$/))
-            return this.err = v.err;
-        if (! v.schema(schema, 'schema'))
-            return this.err = v.err;
+        if (
+            ! v.string(identifier, 'identifier', /^[_a-z][_0-9a-z]*$/)
+         || ! v.schema(schema, 'schema')
+         || ! v.object(schema._meta, 'schema._meta', {
+                _meta:{}, title:{kind:'string',rule:META_TITLE_RX} }))
+            return this.error = v.err;
+
+        // Store the constructor arguments.
         this.$container = $container;
         this.identifier = identifier;
         this.schema = schema;
@@ -1071,6 +1073,7 @@ class Formulate {
         const [height, steps] = schemaToSteps(schema, identifier);
         this.height = height;
         this.steps = steps;
+
         render($container, steps);
         $container.style.height = `${height*30}px`;
     }

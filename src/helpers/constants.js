@@ -3,5 +3,5 @@
 
 /* -------------------------------- Constants ------------------------------- */
 
-export const CSS_PREFIX = 'sg-'; // should have trailing '-'
-export const ID_PREFIX = 'sg'; // should NOT have trailing '-'
+export const CSS_PREFIX = 'rl-f-'; // should have trailing '-'
+export const ID_PREFIX = 'rl-f'; // should NOT have trailing '-'
