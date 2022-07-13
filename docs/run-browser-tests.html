@@ -29,7 +29,7 @@
     <script>!function(){
         var Expect = rufflib.expect.main;
         var Formulate = rufflib.formulate.main;
-        var validateTest = rufflib.formulate.test;
+        var formulateTest = rufflib.formulate.test;
 
         // Generate the <STYLE> element.
         var $css = document.createElement('style');
@@ -38,7 +38,7 @@
 
         // Run the test suite.
         var testSuite = new Expect('Formulate Test Suite (dist, browser)');
-        validateTest(testSuite.expect, Formulate);
+        formulateTest(testSuite.expect, Formulate);
 
         // Display the results.
         document.body.classList.add(testSuite.status);

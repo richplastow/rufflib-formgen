@@ -41,8 +41,11 @@ const server = http.createServer((req, res) => {
     const rufflibExpectProxy = url.includes('__rufflib-expect-docs-dist__')
         ? `node_modules/rufflib-expect/docs/dist/${url.split('/').pop()}`
         : false;
+    const rufflibValidateProxy = url.includes('__rufflib-validate-docs-dist__')
+        ? `node_modules/rufflib-validate/docs/dist/${url.split('/').pop()}`
+        : false;
     const readStream = fs.createReadStream(
-        rufflibExpectProxy || `${dir}${url}`);
+        rufflibExpectProxy || rufflibValidateProxy || `${dir}${url}`);
 
     // Serve the file, or respond with a 404 error.
     readStream.on('open', function () {
