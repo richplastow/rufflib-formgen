@@ -59,7 +59,7 @@ function _buildBoolean(step) {
     $el.id = step.id.replace(/\./g, '-');
     $el.classList.add(`${CSS_PREFIX}row`,`${CSS_PREFIX}boolean`);
     const $identifier = document.createElement('span');
-    $identifier.innerHTML = step.identifier;
+    $identifier.innerHTML = step.id.split('.').pop();
     $el.appendChild($identifier);
     const $input = document.createElement('input');
     $input.type = 'checkbox';

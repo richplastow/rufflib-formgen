@@ -818,66 +818,88 @@
 
   var RX_IDENTIFIER = /^[_a-z][_0-9a-z]*$/;
   var RX_META_TITLE = /^[-_ 0-9a-z]{1,32}$/i;
-  var RX_PATH = /^[_a-z][._0-9a-z]*$/; // rufflib-formulate/src/helpers/build-render-instructions.js
+  var RX_PATH = /^[_a-z][._0-9a-z]{0,254}$/; // rufflib-formulate/src/helpers/build-render-instructions.js
 
   /* -------------------------- Public Class Helpers -------------------------- */
-  // Transforms a Formulate schema and path into a list of steps (instructions for
-  // creating HTML elements). Also, gets the maximised height.
+  // Transforms a Formulate schema and path into a list of steps. Each step is
+  // either an instruction for creating an HTML element, or the special
+  // 'fieldsetUp' instruction.
 
   function buildRenderInstructions(schema) {
     var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : ID_PREFIX;
     var depth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
     var skipValidation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
     // Validate the constructor arguments, unless `skipValidation` is true.
+    // Note that `v.schema()` is already recursive, so only needs running once.
     var v = new Validate('buildRenderInstructions()', skipValidation);
-    if (!v.schema(schema, "".concat(path, ".schema")) || !v.object(schema._meta, "".concat(path, ".schema._meta"), {
+    if (depth === 1 && !v.schema(schema, "(schema) ".concat(path))) return {
+      error: v.err
+    };
+    if (!v.object(schema._meta, "(schema) ".concat(path, "._meta"), {
       _meta: {},
       title: {
         kind: 'string',
         rule: RX_META_TITLE
       }
-    }) || !v.string(path, 'path', RX_PATH) || !v.integer(depth, 'depth', 1)) return {
+    }) || !v.string(path, 'path', RX_PATH) || !v.integer(depth, 'depth', 1, 3) // maximum three levels deep @TODO consider increasing this
+    ) return {
       error: v.err
-    };
-    var steps = [];
-    var fieldsetDown = {
+    }; // Create a list of steps. The first step is always an instruction to render
+    // a <FIELDSET> element.
+
+    var steps = [{
+      depth: depth,
+      height: 1,
+      id: path,
       kind: 'fieldsetDown',
       title: schema._meta.title
-    };
-    fieldsetDown.id = path;
-    steps.push(fieldsetDown);
-    var height = 1; // in lines
+    }];
+    var fieldsetDownRef = steps[0]; // Step through each property in the schema object.
 
-    for (var identifier in schema) {
-      var obj = schema[identifier];
-      if (_typeof(obj) !== 'object' || obj === null) throw Error('!');
-      if (identifier === '_meta') continue;
+    for (var key in schema) {
+      var val = schema[key]; // Ignore the `_meta` object.
 
-      if (obj.kind) {
-        if (!RX_IDENTIFIER.test(identifier)) return {
-          error: "buildRenderInstructions(), '".concat(identifier, "' in '").concat(path, "' fails ").concat(RX_IDENTIFIER)
+      if (key === '_meta') continue; // If the value contains a 'kind' property, build an instruction for
+      // rendering a field.
+
+      if (val.kind) {
+        var id = "".concat(path, ".").concat(key);
+
+        var _v = new Validate('buildRenderInstructions()', skipValidation);
+
+        if (!_v.string(key, 'key', RX_IDENTIFIER) // must not contain a dot
+        || !_v.string(id, 'id', RX_PATH) // must be be too long
+        ) return {
+          error: _v.err
         };
-        obj.identifier = identifier;
-        obj.id = "".concat(path, ".").concat(identifier);
-        steps.push(obj);
-        height++;
-      } else {
-        var result = buildRenderInstructions(obj, "".concat(path, ".").concat(identifier), depth + 1, false);
-        if (result.error) return result;
-        var subHeight = result.height,
-            subSteps = result.steps;
-        height += subHeight;
-        steps.push.apply(steps, _toConsumableArray(subSteps));
-      }
-    }
+        steps.push({
+          id: id,
+          kind: val.kind
+        });
+        fieldsetDownRef.height++;
+        continue;
+      } // The value does not contain a 'kind' property, so build an instruction
+      // for rendering a sub-fieldset.
 
-    fieldsetDown.depth = depth;
-    fieldsetDown.height = height;
+
+      var result = buildRenderInstructions(val, // `val` should be a sub-schema
+      "".concat(path, ".").concat(key), // the path is dot-delimited
+      depth + 1, // recurse down a level
+      skipValidation // some of the validation needs doing on each recurse
+      );
+      if (result.error) return result;
+      var subSteps = result.steps;
+      fieldsetDownRef.height += subSteps[0].height;
+      steps.push.apply(steps, _toConsumableArray(subSteps)); // spread syntax, keeps the array 1 dimensional
+    } // The last step is an instruction that the <FIELDSET> element at `steps[0]`
+    // has ended. Everything between the first and last instruction should be
+    // nested inside that <FIELDSET> element.
+
+
     steps.push({
       kind: 'fieldsetUp'
     });
     return {
-      height: height,
       steps: steps
     };
   }
@@ -897,23 +919,22 @@
       }
     }, 'xyz', 0, true)).toJson({
       error: undefined,
-      height: 1,
       steps: [{
-        kind: 'fieldsetDown',
-        title: 'Abc',
-        id: 'xyz',
         depth: 0,
-        height: 1
+        height: 1,
+        id: 'xyz',
+        kind: 'fieldsetDown',
+        title: 'Abc'
       }, {
         kind: 'fieldsetUp'
       }]
-    }); // Invalid arguments.
+    }); // Typical invalid arguments.
 
-    expect("".concat(nm, "()"), funct()).toError("".concat(nm, "(): 'rl_f.schema' is type 'undefined' not an object"));
-    expect("".concat(nm, "({})"), funct({})).toError("".concat(nm, "(): 'rl_f.schema._meta' is type 'undefined' not an object"));
+    expect("".concat(nm, "()"), funct()).toError("".concat(nm, "(): '(schema) rl_f' is type 'undefined' not an object"));
+    expect("".concat(nm, "({})"), funct({})).toError("".concat(nm, "(): '(schema) rl_f._meta' is type 'undefined' not an object"));
     expect("".concat(nm, "({_meta:{}})"), funct({
       _meta: {}
-    })).toError("".concat(nm, "(): 'rl_f.schema._meta.title' is type 'undefined' not 'string'"));
+    })).toError("".concat(nm, "(): '(schema) rl_f._meta.title' is type 'undefined' not 'string'"));
     expect("".concat(nm, "({_meta:{title:'Abc'}}, 123)"), funct({
       _meta: {
         title: 'Abc'
@@ -923,7 +944,7 @@
       _meta: {
         title: 'Abc'
       }
-    }, 'xy-z')).toError("".concat(nm, "(): 'path' \"xy-z\" fails /^[_a-z][._0...z]*$/"));
+    }, 'xy-z')).toError("".concat(nm, "(): 'path' \"xy-z\" fails /^[_a-z][._0...54}$/"));
     expect("".concat(nm, "({_meta:{title:'Abc'}}, 'xyz', 1.5)"), funct({
       _meta: {
         title: 'Abc'
@@ -933,8 +954,48 @@
       _meta: {
         title: 'Abc'
       }
-    }, 'xyz', 0)).toError("".concat(nm, "(): 'depth' 0 is < 1")); // Invalid schema. @TODO more of these
+    }, 'xyz', 0)).toError("".concat(nm, "(): 'depth' 0 is < 1")); // Path too long, depth too deep.
 
+    expect("".concat(nm, "({_meta:{title:'Abc'}}, 'a'.repeat(256))"), funct({
+      _meta: {
+        title: 'Abc'
+      }
+    }, 'a'.repeat(256))).toError("".concat(nm, "(): 'path' \"aaaaaaaaaaa...aaaa\" fails /^[_a-z][._0...54}$/"));
+    expect("".concat(nm, "({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))"), funct({
+      _meta: {
+        title: 'Abc'
+      },
+      zzzzz: {
+        kind: 'boolean'
+      }
+    }, 'a'.repeat(250))).toError("".concat(nm, "(): 'id' \"aaaaaaaaaaa...zzzz\" fails /^[_a-z][._0...54}$/"));
+    expect("".concat(nm, "({_meta:{title:'A'},b:{_meta:{title:'B'},c:{_meta:{title:'C'},d:{_meta:{title:'D'}}}}}, 'a')"), funct({
+      _meta: {
+        title: 'A'
+      },
+      b: {
+        _meta: {
+          title: 'B'
+        },
+        c: {
+          _meta: {
+            title: 'C'
+          },
+          d: {
+            _meta: {
+              title: 'D'
+            }
+          }
+        }
+      }
+    }, 'a')).toError("".concat(nm, "(): 'depth' 4 is > 3")); // Invalid schema.
+
+    expect("".concat(nm, "({_meta:{title:'A'},foo:[]}, 'bar')"), funct({
+      _meta: {
+        title: 'A'
+      },
+      foo: []
+    }, 'bar')).toError("".concat(nm, "(): '(schema) bar.foo' is an array not an object"));
     expect("".concat(nm, "({_meta:{title:'A'},caf\xE9:{kind:'boolean'}})"), funct({
       _meta: {
         title: 'A'
@@ -942,21 +1003,41 @@
       café: {
         kind: 'boolean'
       }
-    })).toError("".concat(nm, "(), 'caf\xE9' in 'rl_f' fails /^[_a-z][_0-9a-z]*$/")); // Basic usage.
-
-    expect("".concat(nm, "({_meta:{title:'Abc'}}, 'xyz', 1)"), funct({
+    })).toError("".concat(nm, "(): 'key' \"caf\xE9\" fails /^[_a-z][_0-9a-z]*$/"));
+    expect("".concat(nm, "({_meta:{title:'A'},foo:{kind:'no such kind'}})"), funct({
+      _meta: {
+        title: 'A'
+      },
+      foo: {
+        kind: 'no such kind'
+      }
+    })).toError("".concat(nm, "(): '(schema) rl_f.foo.kind' not recognised"));
+    expect("".concat(nm, "({sub:{_meta:{title:''},_:{kind:'boolean'}},_meta:{title:'Abc'}})"), funct({
+      sub: {
+        _meta: {
+          title: ''
+        },
+        _: {
+          kind: 'boolean'
+        }
+      },
       _meta: {
         title: 'Abc'
       }
-    }, 'xyz', 1)).toJson({
+    })).toError("".concat(nm, "(): '(schema) rl_f.sub._meta.title' \"\" fails /^[-_ 0-9a-z...2}$/i")); // Basic usage.
+
+    expect("".concat(nm, "({_meta:{title:'Abc'}}, 'a'.repeat(255), 1)"), funct({
+      _meta: {
+        title: 'Abc'
+      }
+    }, 'a'.repeat(255), 1)).toJson({
       error: undefined,
-      height: 1,
       steps: [{
-        kind: 'fieldsetDown',
-        title: 'Abc',
-        id: 'xyz',
         depth: 1,
-        height: 1
+        height: 1,
+        id: 'a'.repeat(255),
+        kind: 'fieldsetDown',
+        title: 'Abc'
       }, {
         kind: 'fieldsetUp'
       }]
@@ -969,17 +1050,15 @@
         title: 'Abc'
       }
     })).toJson({
-      height: 2,
       steps: [{
-        kind: 'fieldsetDown',
-        title: 'Abc',
-        id: ID_PREFIX,
         depth: 1,
-        height: 2
+        height: 2,
+        id: ID_PREFIX,
+        kind: 'fieldsetDown',
+        title: 'Abc'
       }, {
-        kind: 'boolean',
-        identifier: 'a',
-        id: ID_PREFIX + '.a'
+        id: ID_PREFIX + '.a',
+        kind: 'boolean'
       }, {
         kind: 'fieldsetUp'
       }]
@@ -1000,29 +1079,26 @@
         title: 'Abc'
       }
     }, 'id')).toJson({
-      height: 4,
       steps: [{
-        kind: 'fieldsetDown',
-        title: 'Abc',
-        id: 'id',
         depth: 1,
-        height: 4
-      }, {
+        height: 4,
+        id: 'id',
         kind: 'fieldsetDown',
-        title: 'Sub',
-        id: 'id.sub',
-        depth: 2,
-        height: 2
+        title: 'Abc'
       }, {
-        kind: 'boolean',
-        identifier: '_',
-        id: 'id.sub._'
+        depth: 2,
+        height: 2,
+        id: 'id.sub',
+        kind: 'fieldsetDown',
+        title: 'Sub'
+      }, {
+        id: 'id.sub._',
+        kind: 'boolean'
       }, {
         kind: 'fieldsetUp'
       }, {
-        kind: 'boolean',
-        identifier: 'outer',
-        id: 'id.outer'
+        id: 'id.outer',
+        kind: 'boolean'
       }, {
         kind: 'fieldsetUp'
       }]
