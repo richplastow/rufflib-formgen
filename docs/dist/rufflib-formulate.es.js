@@ -827,8 +827,67 @@ Validate.prototype.string = string;
 
 /* -------------------------------- Constants ------------------------------- */
 
-const CSS_PREFIX = 'rl-f-'; // should have trailing '-'
-const ID_PREFIX = 'rl-f'; // should NOT have trailing '-'
+const CSS_PREFIX = 'rl_f-'; // should have trailing '-'
+const ID_PREFIX = 'rl_f'; // should NOT have trailing '-'
+
+const RX_IDENTIFIER = /^[_a-z][_0-9a-z]*$/;
+const RX_META_TITLE = /^[-_ 0-9a-z]{1,32}$/i;
+const RX_PATH =       /^[_a-z][._0-9a-z]*$/;
+
+const VERSION = '0.0.1';
+
+// rufflib-formulate/src/helpers/build-render-instructions.js
+
+
+/* -------------------------- Public Class Helpers -------------------------- */
+
+// Transforms a Formulate schema and path into a list of steps (instructions for
+// creating HTML elements). Also, gets the maximised height.
+function buildRenderInstructions(schema, path=ID_PREFIX, depth=1, skipValidation=false) {
+
+    // Validate the constructor arguments, unless `skipValidation` is true.
+    const v = new Validate('buildRenderInstructions()', skipValidation);
+    if (! v.schema(schema, `${path}.schema`)
+     || ! v.object(schema._meta, `${path}.schema._meta`, {
+            _meta:{}, title:{ kind:'string', rule:RX_META_TITLE } })
+     || ! v.string(path, 'path', RX_PATH)
+     || ! v.integer(depth, 'depth', 1)
+    ) return { error:v.err };
+
+    const steps = [];
+    const fieldsetDown = {
+        kind: 'fieldsetDown',
+        title: schema._meta.title,
+    };
+    fieldsetDown.id = path;
+    steps.push(fieldsetDown);
+    let height = 1; // in lines
+
+    for (let identifier in schema) {
+        const obj = schema[identifier];
+        if (typeof obj !== 'object' || obj === null) throw Error('!');
+        if (identifier === '_meta') continue;
+        if (obj.kind) {
+            if (! RX_IDENTIFIER.test(identifier)) return { error:
+                `buildRenderInstructions(), '${identifier}' in '${path}' fails ${RX_IDENTIFIER}` }
+            obj.identifier = identifier;
+            obj.id = `${path}.${identifier}`;
+            steps.push(obj);
+            height++;
+        } else {
+            const result = buildRenderInstructions(
+                obj, `${path}.${identifier}`, depth+1, false);
+            if (result.error) return result;
+            const { height:subHeight, steps:subSteps } = result;
+            height += subHeight;
+            steps.push(...subSteps);
+        }
+    }
+    fieldsetDown.depth = depth;
+    fieldsetDown.height = height;
+    steps.push({ kind:'fieldsetUp' });
+    return { height, steps };
+}
 
 // rufflib-formulate/src/helpers/dom-helpers.js
 
@@ -902,46 +961,10 @@ function _isForm($el) {
 function _isFieldsetOrForm($el) {
     return isFieldset($el) || _isForm($el) }
 
-// rufflib-formulate/src/helpers/class-helpers.js
+// rufflib-formulate/src/helpers/render.js
 
 
 /* -------------------------- Public Class Helpers -------------------------- */
-
-// Transforms a Formulate schema into a list of steps (instructions for
-// creating HTML elements).
-function schemaToSteps(schema, path=ID_PREFIX, depth=1) {
-    const steps = [];
-    const fieldsetDown = {
-        kind: 'fieldsetDown',
-        title: schema._meta.title,
-    };
-    fieldsetDown.id = path;
-    steps.push(fieldsetDown);
-    let height = 1; // in lines
-    for (let identifier in schema) {
-        const obj = schema[identifier];
-        if (typeof obj !== 'object' || obj === null) throw Error('!');
-        if (identifier === '_meta') {
-            continue;
-        } if (obj.kind) {
-            if (! /^[_a-z][_a-z0-9]*$/.test(identifier))
-                throw Error(`${identifier} fails /^[_a-z][_a-z0-9]`)
-            obj.identifier = identifier;
-            obj.id = `${path}-${identifier}`;
-            steps.push(obj);
-            height++;
-        } else {
-            const [subHeight, subSteps] = schemaToSteps(
-                obj, `${path}-${identifier}`, depth+1);
-            height += subHeight;
-            steps.push(...subSteps);
-        }
-    }
-    fieldsetDown.depth = depth;
-    fieldsetDown.height = height;
-    steps.push({ kind:'fieldsetUp' });
-    return [height, steps];
-}
 
 // Creates various elements, based on ‘step’ instructions.
 function render($container, steps) {
@@ -990,7 +1013,7 @@ function render($container, steps) {
 // Creates a <CHECKBOX> wrapped in a <LABEL>, based on a ‘step’ instruction.
 function _buildBoolean(step) {
     const $el = document.createElement('label');
-    $el.id = step.id;
+    $el.id = step.id.replace(/\./g, '-');
     $el.classList.add(`${CSS_PREFIX}row`,`${CSS_PREFIX}boolean`);
     const $identifier = document.createElement('span');
     $identifier.innerHTML = step.identifier;
@@ -1005,7 +1028,7 @@ function _buildBoolean(step) {
 // Creates a <FIELDSET> element, based on a ‘step’ instruction.
 function _buildFieldset(step) {
     const $el = document.createElement('fieldset');
-    $el.id = step.id;
+    $el.id = step.id.replace(/\./g, '-');
     $el.classList.add(`${CSS_PREFIX}fieldset`, `${CSS_PREFIX}depth-${step.depth}`);
     $el.style.height = `${step.height*30}px`;
     const $title = document.createElement('div');
@@ -1020,14 +1043,6 @@ function _buildFieldset(step) {
 }
 
 // rufflib-formulate/src/formulate.js
-
-// Assembles the `Formulate` class.
-
-
-/* -------------------------------- Constants ------------------------------- */
-
-const META_TITLE_RX = /^[-_ 0-9a-z]{1,32}$/i;
-const VERSION = '0.0.1';
 
 
 /* ---------------------------------- Class --------------------------------- */
@@ -1058,19 +1073,25 @@ class Formulate {
         if (! ($container instanceof HTMLElement))
             return this.error = `new Formulate(): '$container' is not an HTMLElement`;
         const v = new Validate('new Formulate()', false);
-        if (
-            ! v.string(identifier, 'identifier', /^[_a-z][_0-9a-z]*$/)
+        if (! v.string(identifier, 'identifier', RX_IDENTIFIER)
          || ! v.schema(schema, 'schema')
          || ! v.object(schema._meta, 'schema._meta', {
-                _meta:{}, title:{kind:'string',rule:META_TITLE_RX} }))
-            return this.error = v.err;
+                _meta:{}, title:{ kind:'string', rule:RX_META_TITLE } })
+        ) return this.error = v.err;
 
         // Store the constructor arguments.
         this.$container = $container;
         this.identifier = identifier;
         this.schema = schema;
 
-        const [height, steps] = schemaToSteps(schema, identifier);
+        const result = buildRenderInstructions(
+            schema, // schema
+            `${ID_PREFIX}.${identifier}`, // path
+            1, // depth
+            true, // skipValidation
+        );
+        if (result.error) return this.error = result.error;
+        const { height, steps } = result;
         this.height = height;
         this.steps = steps;
 

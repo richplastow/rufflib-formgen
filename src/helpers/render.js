@@ -1,49 +1,13 @@
-// rufflib-formulate/src/helpers/class-helpers.js
+// rufflib-formulate/src/helpers/render.js
 
 
 /* --------------------------------- Import --------------------------------- */
 
-import { CSS_PREFIX, ID_PREFIX } from './constants.js';
+import { CSS_PREFIX } from './constants.js';
 import { toggleMinimisation, isFieldset } from './dom-helpers.js';
 
 
 /* -------------------------- Public Class Helpers -------------------------- */
-
-// Transforms a Formulate schema into a list of steps (instructions for
-// creating HTML elements).
-export function schemaToSteps(schema, path=ID_PREFIX, depth=1) {
-    const steps = [];
-    const fieldsetDown = {
-        kind: 'fieldsetDown',
-        title: schema._meta.title,
-    };
-    fieldsetDown.id = path;
-    steps.push(fieldsetDown);
-    let height = 1; // in lines
-    for (let identifier in schema) {
-        const obj = schema[identifier];
-        if (typeof obj !== 'object' || obj === null) throw Error('!');
-        if (identifier === '_meta') {
-            continue;
-        } if (obj.kind) {
-            if (! /^[_a-z][_a-z0-9]*$/.test(identifier))
-                throw Error(`${identifier} fails /^[_a-z][_a-z0-9]`)
-            obj.identifier = identifier;
-            obj.id = `${path}-${identifier}`;
-            steps.push(obj);
-            height++;
-        } else {
-            const [subHeight, subSteps] = schemaToSteps(
-                obj, `${path}-${identifier}`, depth+1);
-            height += subHeight;
-            steps.push(...subSteps);
-        }
-    }
-    fieldsetDown.depth = depth;
-    fieldsetDown.height = height;
-    steps.push({ kind:'fieldsetUp' });
-    return [height, steps];
-}
 
 // Creates various elements, based on ‘step’ instructions.
 export function render($container, steps) {
@@ -92,7 +56,7 @@ export function render($container, steps) {
 // Creates a <CHECKBOX> wrapped in a <LABEL>, based on a ‘step’ instruction.
 function _buildBoolean(step) {
     const $el = document.createElement('label');
-    $el.id = step.id;
+    $el.id = step.id.replace(/\./g, '-');
     $el.classList.add(`${CSS_PREFIX}row`,`${CSS_PREFIX}boolean`);
     const $identifier = document.createElement('span');
     $identifier.innerHTML = step.identifier;
@@ -107,7 +71,7 @@ function _buildBoolean(step) {
 // Creates a <FIELDSET> element, based on a ‘step’ instruction.
 function _buildFieldset(step) {
     const $el = document.createElement('fieldset');
-    $el.id = step.id;
+    $el.id = step.id.replace(/\./g, '-');
     $el.classList.add(`${CSS_PREFIX}fieldset`, `${CSS_PREFIX}depth-${step.depth}`);
     $el.style.height = `${step.height*30}px`;
     const $title = document.createElement('div');
@@ -123,13 +87,6 @@ function _buildFieldset(step) {
 
 
 /* ---------------------------------- Tests --------------------------------- */
-
-// Tests schemaToSteps(). @TODO
-export function testSchemaToSteps(expect, Formulate) {
-    expect().section('schemaToSteps()');
-
-
-}
 
 // Tests render(). @TODO
 export function testRender(expect, Formulate) {

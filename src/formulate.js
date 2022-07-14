@@ -3,16 +3,14 @@
 // Assembles the `Formulate` class.
 
 
-/* -------------------------------- Constants ------------------------------- */
-
-const META_TITLE_RX = /^[-_ 0-9a-z]{1,32}$/i;
-const VERSION = '0.0.1';
-
-
 /* --------------------------------- Import --------------------------------- */
 
 import Validate from 'rufflib-validate';
-import { schemaToSteps, render } from './helpers/class-helpers.js';
+
+import { ID_PREFIX, RX_IDENTIFIER, RX_META_TITLE, VERSION }
+    from './helpers/constants.js';
+import { buildRenderInstructions } from './helpers/build-render-instructions.js';
+import { render } from './helpers/render.js';
 
 
 /* ---------------------------------- Class --------------------------------- */
@@ -43,19 +41,25 @@ export default class Formulate {
         if (! ($container instanceof HTMLElement))
             return this.error = `new Formulate(): '$container' is not an HTMLElement`;
         const v = new Validate('new Formulate()', false);
-        if (
-            ! v.string(identifier, 'identifier', /^[_a-z][_0-9a-z]*$/)
+        if (! v.string(identifier, 'identifier', RX_IDENTIFIER)
          || ! v.schema(schema, 'schema')
          || ! v.object(schema._meta, 'schema._meta', {
-                _meta:{}, title:{kind:'string',rule:META_TITLE_RX} }))
-            return this.error = v.err;
+                _meta:{}, title:{ kind:'string', rule:RX_META_TITLE } })
+        ) return this.error = v.err;
 
         // Store the constructor arguments.
         this.$container = $container;
         this.identifier = identifier;
         this.schema = schema;
 
-        const [height, steps] = schemaToSteps(schema, identifier);
+        const result = buildRenderInstructions(
+            schema, // schema
+            `${ID_PREFIX}.${identifier}`, // path
+            1, // depth
+            true, // skipValidation
+        );
+        if (result.error) return this.error = result.error;
+        const { height, steps } = result;
         this.height = height;
         this.steps = steps;
 

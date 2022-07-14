@@ -4,6 +4,7 @@
 // Also used for building Formulate’s unit test distribution files.
 
 import { testFormulateBasics } from './formulate.js';
+import { testBuildRenderInstructions } from './helpers/build-render-instructions.js';
 
 // Run each test. You can comment-out some during development, to help focus on
 // individual tests. But make sure all tests are uncommented before committing.
@@ -22,5 +23,6 @@ export default function formulateTest(expect, Formulate) {
     }
 
     testFormulateBasics(expect, Formulate);
+    testBuildRenderInstructions(expect);
 
 }

@@ -3,5 +3,11 @@
 
 /* -------------------------------- Constants ------------------------------- */
 
-export const CSS_PREFIX = 'rl-f-'; // should have trailing '-'
-export const ID_PREFIX = 'rl-f'; // should NOT have trailing '-'
+export const CSS_PREFIX = 'rl_f-'; // should have trailing '-'
+export const ID_PREFIX = 'rl_f'; // should NOT have trailing '-'
+
+export const RX_IDENTIFIER = /^[_a-z][_0-9a-z]*$/;
+export const RX_META_TITLE = /^[-_ 0-9a-z]{1,32}$/i;
+export const RX_PATH =       /^[_a-z][._0-9a-z]*$/;
+
+export const VERSION = '0.0.1';
