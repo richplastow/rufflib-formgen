@@ -90,45 +90,42 @@ Formulate.VERSION = VERSION;
 
 // Runs basic tests on Formulate.
 export function testFormulateBasics(expect, Formulate) {
+    const et = expect.that;
+    expect.section('Formulate basics');
+
     const $el = document.createElement('div');
-    expect().section('Formulate basics');
 
     // Is a class.
-    expect(`typeof Formulate`, typeof Formulate).toBe('function');
+    et(`typeof Formulate`, typeof Formulate).is('function');
 
     // Invalid constructor arguments.
-    expect(`new Formulate()`,
-            new Formulate()).toError(
-            `new Formulate(): '$container' is not an HTMLElement`);
-    expect(`new Formulate($el)`,
-            new Formulate($el)).toError(
-            `new Formulate(): 'identifier' is type 'undefined' not 'string'`);
-    expect(`new Formulate($el, '1abc')`,
-            new Formulate($el, '1abc')).toError(
-            `new Formulate(): 'identifier' \"1abc\" fails /^[_a-z][_0-9a-z]*$/`);
-    expect(`new Formulate($el, 'abc')`,
-            new Formulate($el, 'abc')).toError(
-            `new Formulate(): 'schema' is type 'undefined' not an object`);
-    expect(`new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})`,
-            new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})).toError(
-            `new Formulate(): 'schema.b.kind' not recognised`);
-    expect(`new Formulate($el, 'abc', {_meta:{}})`,
-            new Formulate($el, 'abc', {_meta:{}})).toError(
-            `new Formulate(): 'schema._meta.title' is type 'undefined' not 'string'`);
-    expect(`new Formulate($el, 'abc', {_meta:{title:''}})`,
-            new Formulate($el, 'abc', {_meta:{title:''}})).toError(
-            `new Formulate(): 'schema._meta.title' "" fails /^[-_ 0-9a-z...2}$/i`);
+    et(`new Formulate()`,
+        new Formulate()).hasError(
+        `new Formulate(): '$container' is not an HTMLElement`);
+    et(`new Formulate($el)`,
+        new Formulate($el)).hasError(
+        `new Formulate(): 'identifier' is type 'undefined' not 'string'`);
+    et(`new Formulate($el, '1abc')`,
+        new Formulate($el, '1abc')).hasError(
+        `new Formulate(): 'identifier' \"1abc\" fails /^[_a-z][_0-9a-z]*$/`);
+    et(`new Formulate($el, 'abc')`,
+        new Formulate($el, 'abc')).hasError(
+        `new Formulate(): 'schema' is type 'undefined' not an object`);
+    et(`new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})`,
+        new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})).hasError(
+        `new Formulate(): 'schema.b.kind' not recognised`);
+    et(`new Formulate($el, 'abc', {_meta:{}})`,
+        new Formulate($el, 'abc', {_meta:{}})).hasError(
+        `new Formulate(): 'schema._meta.title' is type 'undefined' not 'string'`);
+    et(`new Formulate($el, 'abc', {_meta:{title:''}})`,
+        new Formulate($el, 'abc', {_meta:{title:''}})).hasError(
+        `new Formulate(): 'schema._meta.title' "" fails /^[-_ 0-9a-z...2}$/i`);
 
     // constructor arguments ok.
-    expect(`new Formulate($el, 'abc', {_meta:{title:'Abc'}})`,
-            new Formulate($el, 'abc', {_meta:{title:'Abc'}})).toHave({
-                $container: $el,
-                identifier: 'abc',
-                schema: { _meta:{title:'Abc'} },
-            });
-}
-
-// Runs typical usage tests. @TODO
-export function testTypicalUsage(expect, Formulate) {
-    // expect().section('Typical usage');
+    et(`new Formulate($el, 'abc', {_meta:{title:'Abc'}})`,
+        new Formulate($el, 'abc', {_meta:{title:'Abc'}})).has({
+            $container: $el,
+            identifier: 'abc',
+            schema: { _meta:{title:'Abc'} },
+        });
 }

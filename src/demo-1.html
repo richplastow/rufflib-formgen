@@ -72,8 +72,15 @@
 
     <script type="module">
         import Formulate from 'Formulate';
-        import formulateDemo1 from 'formulateDemo1';
-        formulateDemo1(Formulate);
+        import { formulateDemo1 } from 'formulateDemo1';
+        formulateDemo1(
+            Formulate,
+            {
+                $log: document.querySelector('#log'),
+                $form0: document.querySelector('#form-0'),
+                $form1: document.querySelector('#form-1')
+            }
+        );
     </script>
 </body>
 </html>

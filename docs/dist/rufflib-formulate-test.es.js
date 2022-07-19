@@ -7,7 +7,7 @@
 
 
 /**
- * rufflib-validate 1.0.0
+ * rufflib-validate 1.0.1
  * A RuffLIB library for succinctly validating JavaScript values.
  * https://richplastow.com/rufflib-validate
  * @license MIT
@@ -777,7 +777,7 @@ function string(value, name, minSetOrRule, max) {
 
 /* --------------------------------- Import --------------------------------- */
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 
 
 /* ---------------------------------- Class --------------------------------- */
@@ -907,100 +907,161 @@ function buildRenderInstructions(schema, path=ID_PREFIX, depth=1, skipValidation
 
 // Tests buildRenderInstructions().
 function testBuildRenderInstructions(expect) {
-    expect().section('buildRenderInstructions()');
+    const et = expect.that;
+    expect.section('buildRenderInstructions()');
 
     const funct = buildRenderInstructions;
     const nm = 'buildRenderInstructions';
 
     // Is a function, with skippable validation.
-    expect(`typeof ${nm}`,
-            typeof funct).toBe('function');
-    expect(`${nm}({_meta:{title:'Abc'}}, 'xyz', 0, true)`,
-            funct({_meta:{title:'Abc'}}, 'xyz', 0, true)).toJson({
-                error: undefined,
-                steps: [
-                    { depth:0, height:1, id:'xyz', kind:'fieldsetDown', title:'Abc' },
-                    { kind:'fieldsetUp'}
-                ]
-            });
+    et(`typeof ${nm}`,
+        typeof funct).is('function');
+    et(`${nm}({_meta:{title:'Abc'}}, 'xyz', 0, true)`,
+        funct({_meta:{title:'Abc'}}, 'xyz', 0, true)).stringifiesTo({
+            error: undefined,
+            steps: [
+                { depth:0, height:1, id:'xyz', kind:'fieldsetDown', title:'Abc' },
+                { kind:'fieldsetUp'}
+            ]
+        });
 
     // Typical invalid arguments.
-    expect(`${nm}()`,
-            funct()).toError(
-            `${nm}(): '(schema) rl_f' is type 'undefined' not an object`);
-    expect(`${nm}({})`,
-            funct({})).toError(
-            `${nm}(): '(schema) rl_f._meta' is type 'undefined' not an object`);
-    expect(`${nm}({_meta:{}})`,
-            funct({_meta:{}})).toError(
-            `${nm}(): '(schema) rl_f._meta.title' is type 'undefined' not 'string'`);
-    expect(`${nm}({_meta:{title:'Abc'}}, 123)`,
-            funct({_meta:{title:'Abc'}}, 123)).toError(
-            `${nm}(): 'path' is type 'number' not 'string'`);
-    expect(`${nm}({_meta:{title:'Abc'}}, 'xy-z')`,
-            funct({_meta:{title:'Abc'}}, 'xy-z')).toError(
-            `${nm}(): 'path' "xy-z" fails /^[_a-z][._0...54}$/`);
-    expect(`${nm}({_meta:{title:'Abc'}}, 'xyz', 1.5)`,
-            funct({_meta:{title:'Abc'}}, 'xyz', 1.5)).toError(
-            `${nm}(): 'depth' 1.5 is not an integer`);
-    expect(`${nm}({_meta:{title:'Abc'}}, 'xyz', 0)`,
-            funct({_meta:{title:'Abc'}}, 'xyz', 0)).toError(
-            `${nm}(): 'depth' 0 is < 1`);
+    et(`${nm}()`,
+        funct()).hasError(
+        `${nm}(): '(schema) rl_f' is type 'undefined' not an object`);
+    et(`${nm}({})`,
+        funct({})).hasError(
+        `${nm}(): '(schema) rl_f._meta' is type 'undefined' not an object`);
+    et(`${nm}({_meta:{}})`,
+        funct({_meta:{}})).hasError(
+        `${nm}(): '(schema) rl_f._meta.title' is type 'undefined' not 'string'`);
+    et(`${nm}({_meta:{title:'Abc'}}, 123)`,
+        funct({_meta:{title:'Abc'}}, 123)).hasError(
+        `${nm}(): 'path' is type 'number' not 'string'`);
+    et(`${nm}({_meta:{title:'Abc'}}, 'xy-z')`,
+        funct({_meta:{title:'Abc'}}, 'xy-z')).hasError(
+        `${nm}(): 'path' "xy-z" fails /^[_a-z][._0...54}$/`);
+    et(`${nm}({_meta:{title:'Abc'}}, 'xyz', 1.5)`,
+        funct({_meta:{title:'Abc'}}, 'xyz', 1.5)).hasError(
+        `${nm}(): 'depth' 1.5 is not an integer`);
+    et(`${nm}({_meta:{title:'Abc'}}, 'xyz', 0)`,
+        funct({_meta:{title:'Abc'}}, 'xyz', 0)).hasError(
+        `${nm}(): 'depth' 0 is < 1`);
 
     // Path too long, depth too deep.
-    expect(`${nm}({_meta:{title:'Abc'}}, 'a'.repeat(256))`,
-            funct({_meta:{title:'Abc'}}, 'a'.repeat(256))).toError(
-            `${nm}(): 'path' "aaaaaaaaaaa...aaaa" fails /^[_a-z][._0...54}$/`);
-    expect(`${nm}({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))`,
-            funct({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))).toError(
-            `${nm}(): 'id' "aaaaaaaaaaa...zzzz" fails /^[_a-z][._0...54}$/`);
-    expect(`${nm}({_meta:{title:'A'},b:{_meta:{title:'B'},c:{_meta:{title:'C'},d:{_meta:{title:'D'}}}}}, 'a')`,
-            funct({_meta:{title:'A'},b:{_meta:{title:'B'},c:{_meta:{title:'C'},d:{_meta:{title:'D'}}}}}, 'a')).toError(
-            `${nm}(): 'depth' 4 is > 3`);
+    et(`${nm}({_meta:{title:'Abc'}}, 'a'.repeat(256))`,
+        funct({_meta:{title:'Abc'}}, 'a'.repeat(256))).hasError(
+        `${nm}(): 'path' "aaaaaaaaaaa...aaaa" fails /^[_a-z][._0...54}$/`);
+    et(`${nm}({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))`,
+        funct({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))).hasError(
+        `${nm}(): 'id' "aaaaaaaaaaa...zzzz" fails /^[_a-z][._0...54}$/`);
+    et(`${nm}({_meta:{title:'A'},b:{_meta:{title:'B'},c:{_meta:{title:'C'},d:{_meta:{title:'D'}}}}}, 'a')`,
+        funct({_meta:{title:'A'},b:{_meta:{title:'B'},c:{_meta:{title:'C'},d:{_meta:{title:'D'}}}}}, 'a')).hasError(
+        `${nm}(): 'depth' 4 is > 3`);
 
     // Invalid schema.
-    expect(`${nm}({_meta:{title:'A'},foo:[]}, 'bar')`,
-            funct({_meta:{title:'A'},foo:[]}, 'bar')).toError(
-            `${nm}(): '(schema) bar.foo' is an array not an object`);
-    expect(`${nm}({_meta:{title:'A'},café:{kind:'boolean'}})`,
-            funct({_meta:{title:'A'},café:{kind:'boolean'}})).toError(
-            `${nm}(): 'key' "café" fails /^[_a-z][_0-9a-z]*$/`);
-    expect(`${nm}({_meta:{title:'A'},foo:{kind:'no such kind'}})`,
-            funct({_meta:{title:'A'},foo:{kind:'no such kind'}})).toError(
-            `${nm}(): '(schema) rl_f.foo.kind' not recognised`);
-    expect(`${nm}({sub:{_meta:{title:''},_:{kind:'boolean'}},_meta:{title:'Abc'}})`,
-            funct({sub:{_meta:{title:''},_:{kind:'boolean'}},_meta:{title:'Abc'}})).toError(
-            `${nm}(): '(schema) rl_f.sub._meta.title' "" fails /^[-_ 0-9a-z...2}$/i`);
+    et(`${nm}({_meta:{title:'A'},foo:[]}, 'bar')`,
+        funct({_meta:{title:'A'},foo:[]}, 'bar')).hasError(
+        `${nm}(): '(schema) bar.foo' is an array not an object`);
+    et(`${nm}({_meta:{title:'A'},café:{kind:'boolean'}})`,
+        funct({_meta:{title:'A'},café:{kind:'boolean'}})).hasError(
+        `${nm}(): 'key' "café" fails /^[_a-z][_0-9a-z]*$/`);
+    et(`${nm}({_meta:{title:'A'},foo:{kind:'no such kind'}})`,
+        funct({_meta:{title:'A'},foo:{kind:'no such kind'}})).hasError(
+        `${nm}(): '(schema) rl_f.foo.kind' not recognised`);
+    et(`${nm}({sub:{_meta:{title:''},_:{kind:'boolean'}},_meta:{title:'Abc'}})`,
+        funct({sub:{_meta:{title:''},_:{kind:'boolean'}},_meta:{title:'Abc'}})).hasError(
+        `${nm}(): '(schema) rl_f.sub._meta.title' "" fails /^[-_ 0-9a-z...2}$/i`);
 
     // Basic usage.
-    expect(`${nm}({_meta:{title:'Abc'}}, 'a'.repeat(255), 1)`,
-            funct({_meta:{title:'Abc'}}, 'a'.repeat(255), 1)).toJson({
-                error: undefined,
-                steps: [
-                    { depth:1, height:1, id:'a'.repeat(255), kind:'fieldsetDown', title:'Abc' },
-                    { kind:'fieldsetUp' }
-                ]
-            });
-    expect(`${nm}({a:{kind:'boolean'},_meta:{title:'Abc'}})`,
-            funct({a:{kind:'boolean'},_meta:{title:'Abc'}})).toJson({
-                steps: [
-                    { depth:1, height:2, id:ID_PREFIX, kind:'fieldsetDown', title:'Abc' },
-                    { id:ID_PREFIX+'.a', kind:'boolean' },
-                    { kind:'fieldsetUp' }
-                ]
-            });
-    expect(`${nm}({sub:{_meta:{title:'Sub'},_:{kind:'boolean'}},outer:{kind:'boolean'},_meta:{title:'Abc'}}, 'id')`,
-            funct({sub:{_meta:{title:'Sub'},_:{kind:'boolean'}},outer:{kind:'boolean'},_meta:{title:'Abc'}}, 'id')).toJson({
-                steps: [
-                    { depth: 1, height: 4, id: 'id', kind: 'fieldsetDown', title: 'Abc', },
-                    { depth: 2, height: 2, id: 'id.sub', kind: 'fieldsetDown', title: 'Sub' },
-                    { id: 'id.sub._', kind: 'boolean' },
-                    { kind: 'fieldsetUp' },
-                    { id: 'id.outer', kind: 'boolean' },
-                    { kind: 'fieldsetUp' }
-                ]
-            });
+    et(`${nm}({_meta:{title:'Abc'}}, 'a'.repeat(255), 1)`,
+        funct({_meta:{title:'Abc'}}, 'a'.repeat(255), 1)).stringifiesTo({
+            error: undefined,
+            steps: [
+                { depth:1, height:1, id:'a'.repeat(255), kind:'fieldsetDown', title:'Abc' },
+                { kind:'fieldsetUp' }
+            ]
+        });
+    et(`${nm}({a:{kind:'boolean'},_meta:{title:'Abc'}})`,
+        funct({a:{kind:'boolean'},_meta:{title:'Abc'}})).stringifiesTo({
+            steps: [
+                { depth:1, height:2, id:ID_PREFIX, kind:'fieldsetDown', title:'Abc' },
+                { id:ID_PREFIX+'.a', kind:'boolean' },
+                { kind:'fieldsetUp' }
+            ]
+        });
+    et(`${nm}({sub:{_meta:{title:'Sub'},_:{kind:'boolean'}},outer:{kind:'boolean'},_meta:{title:'Abc'}}, 'id')`,
+        funct({sub:{_meta:{title:'Sub'},_:{kind:'boolean'}},outer:{kind:'boolean'},_meta:{title:'Abc'}}, 'id')).stringifiesTo({
+            steps: [
+                { depth: 1, height: 4, id: 'id', kind: 'fieldsetDown', title: 'Abc', },
+                { depth: 2, height: 2, id: 'id.sub', kind: 'fieldsetDown', title: 'Sub' },
+                { id: 'id.sub._', kind: 'boolean' },
+                { kind: 'fieldsetUp' },
+                { id: 'id.outer', kind: 'boolean' },
+                { kind: 'fieldsetUp' }
+            ]
+        });
 
+}
+
+// rufflib-formulate/src/demo-1.js
+
+// The ‘main’ file for bundling the first Formulate demo.
+
+// Runs ‘Demo 1’.
+// Note the `= {}`, to avoid "Cannot destructure property '$log' of 'undefined'...".
+function formulateDemo1(
+    Formulate,
+    { $log, $form0, $form1 } = {},
+) {
+    if (! $log || ! $form0 || ! $form1) throw Error('Missing an element');
+
+    // Generate the top form.
+    const schema0 = {
+        _meta: { title:'Top Form' },
+        outer: {
+            _meta: { title:'Outer' },
+            a_boolean: Formulate.boolean(false),
+            another_boolean: Formulate.boolean(true),
+        },
+        foo: Formulate.boolean(true),
+    };
+    const sg0 = new Formulate($form0, 'schema0', schema0);
+    $log.innerHTML = `new Formulate($form0, 'schema0', schema0) =>\n\n`;
+    $log.innerHTML += JSON.stringify(sg0.toObject(), null, 2);
+
+    // Generate the second form.
+    const schema1 = {
+        _meta: { title:'Second Form' },
+        outer: {
+            _meta: { title:'Outer' },
+            foo: Formulate.boolean(false),
+            inner: {
+                _meta: { title:'Inner' },
+                bar: Formulate.boolean(false),
+                baz: Formulate.boolean(true),
+            },
+            zub: Formulate.boolean(false),
+        },
+    };
+    new Formulate($form1, 'schema1', schema1);
+}
+
+
+/* ---------------------------------- Tests --------------------------------- */
+
+// Runs tests on ‘Demo 1’.
+function testDemo1(expect, Formulate) {
+    expect.section('Demo 1');
+    const et = expect.that;
+
+    // Basics.
+    et(`typeof formulateDemo1`, typeof formulateDemo1).is('function');
+
+    // // Invalid arguments.
+    // et(`formulateDemo1()`,
+    //     formulateDemo1()).hasError(
+    //     `formulateDemo1(): 'Formulate' is not an object`);
 }
 
 // rufflib-formulate/src/formulate.js
@@ -1010,42 +1071,44 @@ function testBuildRenderInstructions(expect) {
 
 // Runs basic tests on Formulate.
 function testFormulateBasics(expect, Formulate) {
+    const et = expect.that;
+    expect.section('Formulate basics');
+
     const $el = document.createElement('div');
-    expect().section('Formulate basics');
 
     // Is a class.
-    expect(`typeof Formulate`, typeof Formulate).toBe('function');
+    et(`typeof Formulate`, typeof Formulate).is('function');
 
     // Invalid constructor arguments.
-    expect(`new Formulate()`,
-            new Formulate()).toError(
-            `new Formulate(): '$container' is not an HTMLElement`);
-    expect(`new Formulate($el)`,
-            new Formulate($el)).toError(
-            `new Formulate(): 'identifier' is type 'undefined' not 'string'`);
-    expect(`new Formulate($el, '1abc')`,
-            new Formulate($el, '1abc')).toError(
-            `new Formulate(): 'identifier' \"1abc\" fails /^[_a-z][_0-9a-z]*$/`);
-    expect(`new Formulate($el, 'abc')`,
-            new Formulate($el, 'abc')).toError(
-            `new Formulate(): 'schema' is type 'undefined' not an object`);
-    expect(`new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})`,
-            new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})).toError(
-            `new Formulate(): 'schema.b.kind' not recognised`);
-    expect(`new Formulate($el, 'abc', {_meta:{}})`,
-            new Formulate($el, 'abc', {_meta:{}})).toError(
-            `new Formulate(): 'schema._meta.title' is type 'undefined' not 'string'`);
-    expect(`new Formulate($el, 'abc', {_meta:{title:''}})`,
-            new Formulate($el, 'abc', {_meta:{title:''}})).toError(
-            `new Formulate(): 'schema._meta.title' "" fails /^[-_ 0-9a-z...2}$/i`);
+    et(`new Formulate()`,
+        new Formulate()).hasError(
+        `new Formulate(): '$container' is not an HTMLElement`);
+    et(`new Formulate($el)`,
+        new Formulate($el)).hasError(
+        `new Formulate(): 'identifier' is type 'undefined' not 'string'`);
+    et(`new Formulate($el, '1abc')`,
+        new Formulate($el, '1abc')).hasError(
+        `new Formulate(): 'identifier' \"1abc\" fails /^[_a-z][_0-9a-z]*$/`);
+    et(`new Formulate($el, 'abc')`,
+        new Formulate($el, 'abc')).hasError(
+        `new Formulate(): 'schema' is type 'undefined' not an object`);
+    et(`new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})`,
+        new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})).hasError(
+        `new Formulate(): 'schema.b.kind' not recognised`);
+    et(`new Formulate($el, 'abc', {_meta:{}})`,
+        new Formulate($el, 'abc', {_meta:{}})).hasError(
+        `new Formulate(): 'schema._meta.title' is type 'undefined' not 'string'`);
+    et(`new Formulate($el, 'abc', {_meta:{title:''}})`,
+        new Formulate($el, 'abc', {_meta:{title:''}})).hasError(
+        `new Formulate(): 'schema._meta.title' "" fails /^[-_ 0-9a-z...2}$/i`);
 
     // constructor arguments ok.
-    expect(`new Formulate($el, 'abc', {_meta:{title:'Abc'}})`,
-            new Formulate($el, 'abc', {_meta:{title:'Abc'}})).toHave({
-                $container: $el,
-                identifier: 'abc',
-                schema: { _meta:{title:'Abc'} },
-            });
+    et(`new Formulate($el, 'abc', {_meta:{title:'Abc'}})`,
+        new Formulate($el, 'abc', {_meta:{title:'Abc'}})).has({
+            $container: $el,
+            identifier: 'abc',
+            schema: { _meta:{title:'Abc'} },
+        });
 }
 
 // rufflib-formulate/src/entry-point-for-tests.js
@@ -1067,7 +1130,9 @@ function formulateTest(expect, Formulate) {
     }
 
     testFormulateBasics(expect, Formulate);
+
     testBuildRenderInstructions(expect);
+    testDemo1(expect);
 
 }
 

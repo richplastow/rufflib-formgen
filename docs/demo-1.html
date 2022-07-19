@@ -61,12 +61,19 @@
     </aside>
     <pre id="log">Loading...</pre>
 
-    <script src="dist/rufflib-formulate-demo-1.umd.js"></script>
+    <script src="dist/rufflib-formulate-demo-1.umd.es5.js"></script>
     <script src="dist/rufflib-formulate.umd.es5.min.js"></script>
     <script>!function(){
         var Formulate = rufflib.formulate.main;
-        var demo1 = rufflib.formulate.demo1;
-        demo1(Formulate);
+        var formulateDemo1 = rufflib.formulate.demo1.formulateDemo1;
+        formulateDemo1(
+            Formulate,
+            {
+                $log: document.querySelector('#log'),
+                $form0: document.querySelector('#form-0'),
+                $form1: document.querySelector('#form-1')
+            }
+        );
     }()</script>
 
 </body>

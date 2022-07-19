@@ -7,7 +7,7 @@
 
 
 /**
- * rufflib-validate 1.0.0
+ * rufflib-validate 1.0.1
  * A RuffLIB library for succinctly validating JavaScript values.
  * https://richplastow.com/rufflib-validate
  * @license MIT
@@ -777,7 +777,7 @@ function string(value, name, minSetOrRule, max) {
 
 /* --------------------------------- Import --------------------------------- */
 
-const VERSION$1 = '1.0.0';
+const VERSION$1 = '1.0.1';
 
 
 /* ---------------------------------- Class --------------------------------- */
@@ -990,6 +990,8 @@ function _isFieldsetOrForm($el) {
 function render($container, steps) {
     // Reset container content, eg remove the text ‘Loading...’.
     $container.innerHTML = '';
+
+    $container.style.height = `${steps[0].height*30}px`;
 
     // Step through each instruction. The last element in `$$containers`
     // is the current container element, so `$$containers.pop()` can be

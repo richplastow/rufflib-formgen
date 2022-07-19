@@ -38,13 +38,13 @@
         document.head.appendChild($css);
 
         // Run the test suite.
-        const testSuite = new Expect('Formulate Test Suite (src, browser)');
-        formulateTest(testSuite.expect, Formulate);
+        const expect = new Expect('Formulate Test Suite (src, browser)');
+        formulateTest(expect, Formulate);
 
         // Display the results.
-        document.body.classList.add(testSuite.status);
+        document.body.classList.add(expect.status);
         document.querySelector('#test-output').innerHTML =
-            testSuite.render('Html', '', true);
+            expect.render('Html', '', true);
 
     </script>
 </body>

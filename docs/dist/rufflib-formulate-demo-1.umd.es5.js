@@ -1,11 +1,3 @@
-/**
- * Demo 1 for rufflib-formulate 0.0.1
- * A RuffLIB library for transforming an object schema into an HTML form.
- * https://richplastow.com/rufflib-formulate
- * @license MIT
- */
-
-
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -22,6 +14,12 @@
     }, _typeof(obj);
   }
 
+  /**
+   * Demo 1 for rufflib-formulate 0.0.1
+   * A RuffLIB library for transforming an object schema into an HTML form.
+   * https://richplastow.com/rufflib-formulate
+   * @license MIT
+   */
   // rufflib-formulate/src/demo-1.js
   // The ‘main’ file for bundling the first Formulate demo.
   // Runs ‘Demo 1’.
@@ -75,6 +73,7 @@
   /* ---------------------------------- Tests --------------------------------- */
   // Runs tests on ‘Demo 1’.
 
+
   function testDemo1(expect, Formulate) {
     expect.section('Demo 1');
     var et = expect.that; // Basics.
@@ -85,7 +84,7 @@
     //     `formulateDemo1(): 'Formulate' is not an object`);
   }
 
-  exports["default"] = formulateDemo1;
+  exports.formulateDemo1 = formulateDemo1;
   exports.testDemo1 = testDemo1;
 
   Object.defineProperty(exports, '__esModule', { value: true });

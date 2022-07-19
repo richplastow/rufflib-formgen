@@ -42,21 +42,21 @@ export default [
     },
 
     // Build demo files.
-    // {
-    //     input: 'src/demo-1.js',
-    //     output: {
-    //         banner: banner.replace(' * ', ' * Demo 1 for '),
-    //         file: 'docs/dist/rufflib-formulate-demo-1.es.js',
-    //         format: 'es',
-    //     }
-    // },
     {
         input: 'src/demo-1.js',
         output: {
             banner: banner.replace(' * ', ' * Demo 1 for '),
-            file: 'docs/dist/rufflib-formulate-demo-1.umd.js',
+            file: 'docs/dist/rufflib-formulate-demo-1.es.js',
+            format: 'es',
+        },
+        plugins: [nodeResolve({ resolveOnly:['rufflib-validate'] })]
+    },
+    {
+        input: 'docs/dist/rufflib-formulate-demo-1.es.js',
+        output: {
+            file: 'docs/dist/rufflib-formulate-demo-1.umd.es5.js',
             format: 'umd', // eg for `docs/demo-1.html` in legacy browsers
-            name: 'rufflib.formulate.demo1' // `rufflib.formulate.demo1(Formulate)`
+            name: 'rufflib.formulate.demo1' // `rufflib.formulate.demo1.formulateDemo1(...)`
         },
         plugins: [
             babel({ babelHelpers: 'bundled' })
@@ -84,10 +84,10 @@ export default [
         plugins: [
             babel({ babelHelpers: 'bundled' }),
             copy({
-                targets: [{
-                    src: 'node_modules/rufflib-expect/docs/dist/rufflib-expect.umd.es5.min.js',
-                    dest: 'docs/lib'
-                }]
+                outputFolder: 'docs/lib',
+                targets: [
+                    'node_modules/rufflib-expect/docs/dist/rufflib-expect.umd.es5.min.js',
+                ]
             }),
         ]
     }

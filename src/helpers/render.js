@@ -14,6 +14,8 @@ export function render($container, steps) {
     // Reset container content, eg remove the text ‘Loading...’.
     $container.innerHTML = '';
 
+    $container.style.height = `${steps[0].height*30}px`;
+
     // Step through each instruction. The last element in `$$containers`
     // is the current container element, so `$$containers.pop()` can be
     // used to go back up a level.
