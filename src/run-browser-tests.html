@@ -11,9 +11,16 @@
         body{margin:0;color:#eee;font:10px/2 Verdana,Arial;text-align:center}
         @media screen and (min-width:450px){body{font-size:15px}}
         body{padding:9px;min-width:282px;background:#000}
+        pre,a{padding:4px 8px;border-radius:4px;text-decoration:none}
+        pre{margin:9px;text-align:left}
+        #err{padding:0 8px;background:#491f31;color:#fbb}
     </style>
 </head>
 <body>
+    <pre id="err"></pre><script>window.onerror=function(m,s,l,c){if(-1==m.indexOf(
+    'start with “./”'))document.getElementById('err').innerHTML+=m+'\n    '+s
+    +':'+l+':'+c+'\n'} // Firefox has a spurious 'start with “./”' error</script>
+
     <h2>RuffLIB Formulate | Tests</h2>
     <div id="test-output">Loading...</div>
 

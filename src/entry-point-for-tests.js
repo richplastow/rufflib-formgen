@@ -4,7 +4,7 @@
 // Also used for building Formulate’s unit test distribution files.
 
 import { testBuildRenderInstructions } from './helpers/build-render-instructions.js';
-import { testDemo1 } from './demo-1.js';
+import { testDemo1 } from './demo/demo-1.js';
 import { testFormulateBasics } from './formulate.js';
 
 // Run each test. You can comment-out some during development, to help focus on

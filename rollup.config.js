@@ -43,19 +43,19 @@ export default [
 
     // Build demo files.
     {
-        input: 'src/demo-1.js',
+        input: 'src/demo/demo-1.js',
         output: {
             banner: banner.replace(' * ', ' * Demo 1 for '),
-            file: 'docs/dist/rufflib-formulate-demo-1.es.js',
+            file: 'docs/demo/demo-1.es.js',
             format: 'es',
         },
         plugins: [nodeResolve({ resolveOnly:['rufflib-validate'] })]
     },
     {
-        input: 'docs/dist/rufflib-formulate-demo-1.es.js',
+        input: 'docs/demo/demo-1.es.js',
         output: {
-            file: 'docs/dist/rufflib-formulate-demo-1.umd.es5.js',
-            format: 'umd', // eg for `docs/demo-1.html` in legacy browsers
+            file: 'docs/demo/demo-1.umd.es5.js',
+            format: 'umd', // eg for `docs/demo/demo-1.html` in legacy browsers
             name: 'rufflib.formulate.demo1' // `rufflib.formulate.demo1.formulateDemo1(...)`
         },
         plugins: [
