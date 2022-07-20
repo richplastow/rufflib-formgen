@@ -2,13 +2,30 @@
 
 // The ‘main’ file for bundling the first Formulate demo.
 
+
+/* --------------------------------- Import --------------------------------- */
+
+import Validate from 'rufflib-validate';
+
+
+/* ---------------------------------- Main ---------------------------------- */
+
 // Runs ‘Demo 1’.
-// Note the `= {}`, to avoid "Cannot destructure property '$log' of 'undefined'...".
 export function formulateDemo1(
     Formulate,
-    { $log, $form0, $form1 } = {},
+    $el,
 ) {
-    if (! $log || ! $form0 || ! $form1) throw Error('Missing an element');
+    // Validate the arguments.
+    const v = new Validate('formulateDemo1()');
+    if (! v.class(Formulate, 'Formulate', { _meta:{},
+                name:    { kind:'string', rule:/^Formulate$/ },
+                VERSION: { kind:'string', rule:/^0\.0\.1$/ } })
+     || ! v.object($el, '$el', { _meta:{},
+                $log:   { _meta: { inst: HTMLElement } },
+                $form0: { _meta: { inst: HTMLElement } },
+                $form1: { _meta: { inst: HTMLElement } } })
+    ) return { error:v.err };
+    const { $log, $form0, $form1 } = $el;
 
     // Generate the top form.
     const schema0 = {
@@ -20,9 +37,10 @@ export function formulateDemo1(
         },
         foo: Formulate.boolean(true),
     }
-    const sg0 = new Formulate($form0, 'schema0', schema0);
+    const f0 = new Formulate($form0, 'schema0', schema0);
+    if (f0.error) throw Error(f0.error);
     $log.innerHTML = `new Formulate($form0, 'schema0', schema0) =>\n\n`;
-    $log.innerHTML += JSON.stringify(sg0.toObject(), null, 2);
+    $log.innerHTML += JSON.stringify(f0.toObject(), null, 2);
 
     // Generate the second form.
     const schema1 = {
@@ -38,7 +56,8 @@ export function formulateDemo1(
             zub: Formulate.boolean(false),
         },
     }
-    new Formulate($form1, 'schema1', schema1);
+    const f1 = new Formulate($form1, 'schema1', schema1);
+    if (f1.error) throw Error(f1.error);
 }
 
 
@@ -52,8 +71,37 @@ export function testDemo1(expect, Formulate) {
     // Basics.
     et(`typeof formulateDemo1`, typeof formulateDemo1).is('function');
 
-    // // Invalid arguments.
-    // et(`formulateDemo1()`,
-    //     formulateDemo1()).hasError(
-    //     `formulateDemo1(): 'Formulate' is not an object`);
+    // Invalid arguments.
+    et(`formulateDemo1()`,
+        formulateDemo1()).hasError(
+        `formulateDemo1(): 'Formulate' is type 'undefined' not 'function'`);
+    et(`formulateDemo1(function () {})`,
+        formulateDemo1(function () {})).hasError(
+        `formulateDemo1(): 'Formulate.name' "" fails /^Formulate$/`);
+    et(`formulateDemo1(class Nope {})`,
+        formulateDemo1(class Nope {})).hasError(
+        `formulateDemo1(): 'Formulate.name' "Nope" fails /^Formulate$/`);
+    et(`formulateDemo1(class Formulate {})`,
+        formulateDemo1(class Formulate {})).hasError(
+        `formulateDemo1(): 'Formulate.VERSION' is type 'undefined' not 'string'`);
+    et(`formulateDemo1(class Formulate { static VERSION = 'Also Nope' })`,
+        formulateDemo1(class Formulate { static VERSION = 'Also Nope' })).hasError(
+        `formulateDemo1(): 'Formulate.VERSION' "Also Nope" fails /^0\\.0\\.1$/`);
+    et(`formulateDemo1(class Formulate { static VERSION = '0.0.1' })`,
+        formulateDemo1(class Formulate { static VERSION = '0.0.1' })).hasError(
+        `formulateDemo1(): '$el' is type 'undefined' not 'object'`);
+    et(`formulateDemo1(class Formulate { static VERSION = '0.0.1' }, {})`,
+        formulateDemo1(class Formulate { static VERSION = '0.0.1' }, {})).hasError(
+        `formulateDemo1(): '$el.$log' is type 'undefined' not an object`);
+    const $mock = document.createElement('div');
+    et(`formulateDemo1(Formulate, { $log:$mock, $form0:{}, $form1:1 })`,
+        formulateDemo1(Formulate, { $log:$mock, $form0:{}, $form1:1 })).hasError(
+        `formulateDemo1(): '$el.$form0' is not an instance of 'HTMLElement'`);
+    et(`formulateDemo1(Formulate, { $log:$mock, $form0:$mock, $form1:null })`,
+        formulateDemo1(Formulate, { $log:$mock, $form0:$mock, $form1:null })).hasError(
+        `formulateDemo1(): '$el.$form1' is null not an object`);
+
+    // Working ok.
+    et(`formulateDemo1(Formulate, { $log:$mock, $form0:$mock, $form1:$mock })`,
+        formulateDemo1(Formulate, { $log:$mock, $form0:$mock, $form1:$mock })).is(undefined);
 }

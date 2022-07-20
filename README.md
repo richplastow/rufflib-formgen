@@ -14,6 +14,7 @@ __A RuffLIB library for transforming an object schema into an HTML form.__
 ```js
 new Formulate(
     document.querySelector('#wrap'),
+    'my_form',
     {
         _meta: { title:'My Form' },
         outer: {
@@ -22,8 +23,7 @@ new Formulate(
             another_boolean: Formulate.boolean(true),
         },
         outer_boolean: Formulate.boolean(true),
-    },
-    'my_form'
+    }
 );
 ```
 

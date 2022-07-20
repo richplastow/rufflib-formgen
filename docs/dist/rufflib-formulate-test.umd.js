@@ -39,6 +39,21 @@
     return Constructor;
   }
 
+  function _defineProperty(obj, key, value) {
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+
+    return obj;
+  }
+
   function _toConsumableArray(arr) {
     return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
   }
@@ -80,7 +95,7 @@
    */
 
   /**
-   * rufflib-validate 1.0.1
+   * rufflib-validate 1.3.0
    * A RuffLIB library for succinctly validating JavaScript values.
    * https://richplastow.com/rufflib-validate
    * @license MIT
@@ -102,6 +117,7 @@
 
   var A = 'array';
   var B = 'boolean';
+  var F = 'function';
   var I = 'integer';
   var N = 'number';
   var S = 'string';
@@ -114,7 +130,13 @@
   schema) {
     var path = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
 
-    // Validate each key/value pair.
+    // Do an `instanceof` test, if the `_meta` object contains an `inst` key.
+    if (schema._meta.inst && !(obj instanceof schema._meta.inst)) {
+      if (!name && path.length === 0) this.err = "".concat(this.prefix, ": the top level object is not an instance of '").concat(schema._meta.inst.name, "'");else if (!name) this.err = "".concat(this.prefix, ": '").concat(path.join('.'), "' of the top level object is not an instance of '").concat(schema._meta.inst.name, "'");else if (path.length === 0) this.err = "".concat(this.prefix, ": '").concat(name, "' is not an instance of '").concat(schema._meta.inst.name, "'");else this.err = "".concat(this.prefix, ": '").concat(name, ".").concat(path.join('.'), "' is not an instance of '").concat(schema._meta.inst.name, "'");
+      return false;
+    } // Validate each key/value pair.
+
+
     for (var key in schema) {
       if (key === '_meta') continue; // ignore the special `_meta` property
       // Get handy shortcuts to the value to validate, and the schema object
@@ -391,6 +413,29 @@
     this.err = null;
     if (this.skip) return true;
     return this._type(value, name, 'boolean');
+  } // rufflib-validate/src/methods/class.js
+
+  /* --------------------------------- Method --------------------------------- */
+  // Public method which validates a class.
+  // Note the trailing underscore, because `class` is a reserved word in JavaScript.
+
+
+  function class_(value, name, schema) {
+    this.err = null;
+    if (this.skip) return true;
+    _typeof(name) === S ? name.slice(-11) === ' of a value' // @TODO improve this slow and arbitrary hack!
+    ? name : "'".concat(name, "'") : 'a value'; // Deal with a value which is not a function.
+
+    if (!this._type(value, name, 'function')) return false; // Short-circuit if only two arguments were supplied.
+
+    if (_typeof(schema) === U) return true; // Check that the `schema` argument is correct.
+    // @TODO optionally bypass this, when performance is important
+
+    var isCorrect = this.schema(schema, 'schema');
+    if (!isCorrect) throw Error("Validate.class() incorrectly invoked: ".concat(this.err)); // Validate `value` against the `schema`.
+
+    if (!this._validateAgainstSchema(value, name, schema)) return false;
+    return true;
   } // rufflib-validate/src/methods/integer.js
   // Public method which validates an integer like `10` or `-3.2e9`.
   // Positive and negative infinity are not integers, and neither is `NaN`.
@@ -515,8 +560,7 @@
     if (_typeof(schema) === U) return true; // Check that the `schema` argument is correct.
     // @TODO optionally bypass this, when performance is important
 
-    var isCorrect = this.schema(schema, 'schema'); // this.err = checkSchemaCorrectness(schema, 'schema');
-
+    var isCorrect = this.schema(schema, 'schema');
     if (!isCorrect) throw Error("Validate.object() incorrectly invoked: ".concat(this.err)); // Validate `value` against the `schema`.
 
     if (!this._validateAgainstSchema(value, name, schema)) return false;
@@ -525,13 +569,23 @@
 
   /* --------------------------------- Method --------------------------------- */
   // Public method which validates a schema object.
+  // The optional `metaSchema` argument defines properties which `_meta` objects
+  // must contain. If `metaSchema` is omitted, `_meta` can be an empty object.
 
 
-  function schema(value, name) {
+  function schema(value, name, metaSchema) {
     this.err = null;
-    if (this.skip) return true; // Recursively check that `value` is a correct `schema`.
+    if (this.skip) return true; // If present, check that the `metaSchema` is a plain object.
 
-    var err = checkSchemaCorrectness(value, name, []);
+    if (_typeof(metaSchema) !== U) {
+      if (metaSchema === null || _typeof(metaSchema) !== O || Array.isArray(metaSchema)) {
+        var is = getIs(metaSchema);
+        throw Error("Validate.schema() incorrectly invoked: ".concat(this.prefix, ": ") + "optional 'metaSchema' is ".concat(is, " not an object"));
+      }
+    } // Recursively check that `value` is a correct `schema`.
+
+
+    var err = checkSchemaCorrectness(value, name, [], metaSchema, this);
 
     if (err) {
       this.err = "".concat(this.prefix, ": ").concat(err);
@@ -544,13 +598,14 @@
   // Checks that a given `schema` object is correctly formed.
   // Returns a string if the schema is incorrect, or `null` if it’s correct.
   // @TODO guard against cyclic objects
+  // @TODO make this into a private method, _checkSchemaCorrectness(), to avoid `that`
 
 
-  function checkSchemaCorrectness(sma, name, path) {
+  function checkSchemaCorrectness(sma, name, path, metaSchema, that) {
     // Check that the `schema` is a plain object.
     if (sma === null || _typeof(sma) !== O || Array.isArray(sma)) {
       var is = getIs(sma);
-      if (!name && path.length === 0) return "unnamed schema is ".concat(is, " not an object");
+      if (!name && path.length === 0) return "the schema is ".concat(is, " not an object");
       if (!name) return "'".concat(path.join('.'), "' of the schema is ").concat(is, " not an object");
       if (path.length === 0) return "'".concat(name, "' is ").concat(is, " not an object");
       return "'".concat(name, ".").concat(path.join('.'), "' is ").concat(is, " not an object");
@@ -562,26 +617,60 @@
     if (_meta === null || _typeof(_meta) !== O || Array.isArray(_meta)) {
       var _is = getIs(_meta);
 
-      if (!name && path.length === 0) return "unnamed schema '._meta' is ".concat(_is, " not an object");
+      if (!name && path.length === 0) return "top level '_meta' of the schema is ".concat(_is, " not an object");
       if (!name) return "'".concat(path.join('.'), "._meta' of the schema is ").concat(_is, " not an object");
       if (path.length === 0) return "'".concat(name, "._meta' is ").concat(_is, " not an object");
       return "'".concat(name, ".").concat(path.join('.'), "._meta' is ").concat(_is, " not an object");
-    } // Check each key/value pair.
+    } // If the special `_meta.inst` value exists, chack that it is an object with
+    // a `name` property.
+
+
+    var inst = sma._meta.inst;
+
+    if (typeof inst !== 'undefined') {
+      if (inst === null || _typeof(inst) !== F || Array.isArray(inst)) {
+        var _is2 = getIs(inst);
+
+        if (!name && path.length === 0) return "top level '._meta.inst' of the schema is ".concat(_is2, " not type 'function'");
+        if (!name) return "'".concat(path.join('.'), "._meta.inst' of the schema is ").concat(_is2, " not type 'function'");
+        if (path.length === 0) return "'".concat(name, "._meta.inst' is ").concat(_is2, " not type 'function'");
+        return "'".concat(name, ".").concat(path.join('.'), "._meta.inst' is ").concat(_is2, " not type 'function'");
+      }
+
+      if (typeof inst.name !== 'string') {
+        var _is3 = getIs(inst.name);
+
+        if (!name && path.length === 0) return "top level '._meta.inst.name' of the schema is ".concat(_is3, " not 'string'");
+        if (!name) return "'".concat(path.join('.'), "._meta.inst.name' of the schema is ").concat(_is3, " not 'string'");
+        if (path.length === 0) return "'".concat(name, "._meta.inst.name' is ").concat(_is3, " not 'string'");
+        return "'".concat(name, ".").concat(path.join('.'), "._meta.inst.name' is ").concat(_is3, " not 'string'");
+      }
+    } // Use `metaSchema` (if provided) to validate the `_meta` object.
+    // @TODO
+    // Check each key/value pair.
 
 
     for (var key in sma) {
-      if (key === '_meta') continue; // ignore the special `_meta` property
       // Every value must be a plain object.
-
       var value = sma[key];
 
       if (value === null || _typeof(value) !== O || Array.isArray(value)) {
         return fmtErr(name, path, key, "is ".concat(getIs(value), " not an object"));
+      } // Validate the special `_meta` property.
+
+
+      if (key === '_meta') {
+        if (metaSchema) {
+          var n = name && path.length ? "".concat(name, ".").concat(path.join('.'), "._meta") : name ? "".concat(name, "._meta") : path.length ? "".concat(path.join('.'), "._meta") : "top level _meta";
+          if (!that.object(value, n, metaSchema)) return that.err.slice(that.prefix.length + 2);
+        }
+
+        continue;
       } // Deal with a sub-schema.
 
 
       if (value._meta) {
-        var err = checkSchemaCorrectness(value, name, [].concat(_toConsumableArray(path), [key]));
+        var err = checkSchemaCorrectness(value, name, [].concat(_toConsumableArray(path), [key]), metaSchema, that);
         if (err) return err;
         continue;
       } // Schema value properties are never allowed to be `null`.
@@ -775,7 +864,8 @@
   /* --------------------------------- Import --------------------------------- */
 
 
-  var VERSION = '1.0.1';
+  var NAME$1 = 'Validate';
+  var VERSION$1 = '1.3.0';
   /* ---------------------------------- Class --------------------------------- */
   // A RuffLIB library for succinctly validating JavaScript values.
   //
@@ -795,7 +885,8 @@
   //     sayOk(3, true); // ok! (less safe, but faster)
   //
 
-  var Validate = /*#__PURE__*/_createClass(function Validate(prefix, skip) {
+  var Validate = /*#__PURE__*/_createClass( // make sure minification doesn’t squash the `name` property
+  function Validate(prefix, skip) {
     _classCallCheck(this, Validate);
 
     this.err = null;
@@ -803,17 +894,25 @@
     this.skip = skip || false;
   });
 
-  Validate.VERSION = VERSION;
+  _defineProperty(Validate, "name", NAME$1);
+
+  _defineProperty(Validate, "VERSION", VERSION$1);
+
   Validate.prototype._type = _type;
   Validate.prototype._validateAgainstSchema = _validateAgainstSchema;
   Validate.prototype.array = array;
   Validate.prototype["boolean"] = _boolean;
+  Validate.prototype["class"] = class_;
   Validate.prototype.integer = integer;
   Validate.prototype.number = number;
   Validate.prototype.object = object;
   Validate.prototype.schema = schema;
   Validate.prototype.string = string; // rufflib-formulate/src/helpers/constants.js
 
+  /* -------------------------------- Constants ------------------------------- */
+
+  var NAME = 'Formulate';
+  var VERSION = '0.0.1';
   var ID_PREFIX = 'rl_f'; // should NOT have trailing '-'
 
   var RX_IDENTIFIER = /^[_a-z][_0-9a-z]*$/;
@@ -857,24 +956,27 @@
     var fieldsetDownRef = steps[0]; // Step through each property in the schema object.
 
     for (var key in schema) {
-      var val = schema[key]; // Ignore the `_meta` object.
+      var val = schema[key];
+      var initially = val.initially,
+          kind = val.kind; // Ignore the `_meta` object.
 
       if (key === '_meta') continue; // If the value contains a 'kind' property, build an instruction for
       // rendering a field.
 
-      if (val.kind) {
+      if (kind) {
         var id = "".concat(path, ".").concat(key);
 
         var _v = new Validate('buildRenderInstructions()', skipValidation);
 
         if (!_v.string(key, 'key', RX_IDENTIFIER) // must not contain a dot
-        || !_v.string(id, 'id', RX_PATH) // must be be too long
+        || !_v[kind](initially, "".concat(id, ".initially")) || !_v.string(id, 'id', RX_PATH) // must be be too long
         ) return {
           error: _v.err
         };
         steps.push({
           id: id,
-          kind: val.kind
+          initially: initially,
+          kind: kind
         });
         fieldsetDownRef.height++;
         continue;
@@ -936,6 +1038,16 @@
     et("".concat(nm, "({_meta:{}})"), funct({
       _meta: {}
     })).hasError("".concat(nm, "(): '(schema) rl_f._meta.title' is type 'undefined' not 'string'"));
+    et("".concat(nm, "({_meta:{title:'Ok'},foo:{_meta:{title:[]}}})"), funct({
+      _meta: {
+        title: 'Ok'
+      },
+      foo: {
+        _meta: {
+          title: []
+        }
+      }
+    })).hasError("".concat(nm, "(): '(schema) rl_f.foo._meta.title' is an array not type 'string'"));
     et("".concat(nm, "({_meta:{title:'Abc'}}, 123)"), funct({
       _meta: {
         title: 'Abc'
@@ -962,11 +1074,12 @@
         title: 'Abc'
       }
     }, 'a'.repeat(256))).hasError("".concat(nm, "(): 'path' \"aaaaaaaaaaa...aaaa\" fails /^[_a-z][._0...54}$/"));
-    et("".concat(nm, "({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))"), funct({
+    et("".concat(nm, "({_meta:{title:'Abc'},zzzzz:{initially:true,kind:'boolean'}}, 'a'.repeat(250))"), funct({
       _meta: {
         title: 'Abc'
       },
       zzzzz: {
+        initially: true,
         kind: 'boolean'
       }
     }, 'a'.repeat(250))).hasError("".concat(nm, "(): 'id' \"aaaaaaaaaaa...zzzz\" fails /^[_a-z][._0...54}$/"));
@@ -1043,8 +1156,9 @@
         kind: 'fieldsetUp'
       }]
     });
-    et("".concat(nm, "({a:{kind:'boolean'},_meta:{title:'Abc'}})"), funct({
+    et("".concat(nm, "({a:{initially:false,kind:'boolean'},_meta:{title:'Abc'}})"), funct({
       a: {
+        initially: false,
         kind: 'boolean'
       },
       _meta: {
@@ -1059,23 +1173,24 @@
         title: 'Abc'
       }, {
         id: ID_PREFIX + '.a',
+        initially: false,
         kind: 'boolean'
       }, {
         kind: 'fieldsetUp'
       }]
     });
-    et("".concat(nm, "({sub:{_meta:{title:'Sub'},_:{kind:'boolean'}},outer:{kind:'boolean'},_meta:{title:'Abc'}}, 'id')"), funct({
+    var bool = {
+      initially: true,
+      kind: 'boolean'
+    };
+    et("".concat(nm, "({sub:{_meta:{title:'Sub'},_:bool},outer:bool,_meta:{title:'Abc'}}, 'id')"), funct({
       sub: {
         _meta: {
           title: 'Sub'
         },
-        _: {
-          kind: 'boolean'
-        }
+        _: bool
       },
-      outer: {
-        kind: 'boolean'
-      },
+      outer: bool,
       _meta: {
         title: 'Abc'
       }
@@ -1094,29 +1209,60 @@
         title: 'Sub'
       }, {
         id: 'id.sub._',
+        initially: true,
         kind: 'boolean'
       }, {
         kind: 'fieldsetUp'
       }, {
         id: 'id.outer',
+        initially: true,
         kind: 'boolean'
       }, {
         kind: 'fieldsetUp'
       }]
     });
   } // rufflib-formulate/src/demo-1.js
-  // The ‘main’ file for bundling the first Formulate demo.
+
+  /* ---------------------------------- Main ---------------------------------- */
   // Runs ‘Demo 1’.
-  // Note the `= {}`, to avoid "Cannot destructure property '$log' of 'undefined'...".
 
 
-  function formulateDemo1(Formulate) {
-    var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
-        $log = _ref.$log,
-        $form0 = _ref.$form0,
-        $form1 = _ref.$form1;
-
-    if (!$log || !$form0 || !$form1) throw Error('Missing an element'); // Generate the top form.
+  function formulateDemo1(Formulate, $el) {
+    // Validate the arguments.
+    var v = new Validate('formulateDemo1()');
+    if (!v["class"](Formulate, 'Formulate', {
+      _meta: {},
+      name: {
+        kind: 'string',
+        rule: /^Formulate$/
+      },
+      VERSION: {
+        kind: 'string',
+        rule: /^0\.0\.1$/
+      }
+    }) || !v.object($el, '$el', {
+      _meta: {},
+      $log: {
+        _meta: {
+          inst: HTMLElement
+        }
+      },
+      $form0: {
+        _meta: {
+          inst: HTMLElement
+        }
+      },
+      $form1: {
+        _meta: {
+          inst: HTMLElement
+        }
+      }
+    })) return {
+      error: v.err
+    };
+    var $log = $el.$log,
+        $form0 = $el.$form0,
+        $form1 = $el.$form1; // Generate the top form.
 
     var schema0 = {
       _meta: {
@@ -1131,9 +1277,10 @@
       },
       foo: Formulate["boolean"](true)
     };
-    var sg0 = new Formulate($form0, 'schema0', schema0);
+    var f0 = new Formulate($form0, 'schema0', schema0);
+    if (f0.error) throw Error(f0.error);
     $log.innerHTML = "new Formulate($form0, 'schema0', schema0) =>\n\n";
-    $log.innerHTML += JSON.stringify(sg0.toObject(), null, 2); // Generate the second form.
+    $log.innerHTML += JSON.stringify(f0.toObject(), null, 2); // Generate the second form.
 
     var schema1 = {
       _meta: {
@@ -1154,20 +1301,55 @@
         zub: Formulate["boolean"](false)
       }
     };
-    new Formulate($form1, 'schema1', schema1);
+    var f1 = new Formulate($form1, 'schema1', schema1);
+    if (f1.error) throw Error(f1.error);
   }
   /* ---------------------------------- Tests --------------------------------- */
   // Runs tests on ‘Demo 1’.
 
 
   function testDemo1(expect, Formulate) {
+    var _class, _class2, _class3;
+
     expect.section('Demo 1');
     var et = expect.that; // Basics.
 
-    et("typeof formulateDemo1", _typeof(formulateDemo1)).is('function'); // // Invalid arguments.
-    // et(`formulateDemo1()`,
-    //     formulateDemo1()).hasError(
-    //     `formulateDemo1(): 'Formulate' is not an object`);
+    et("typeof formulateDemo1", _typeof(formulateDemo1)).is('function'); // Invalid arguments.
+
+    et("formulateDemo1()", formulateDemo1()).hasError("formulateDemo1(): 'Formulate' is type 'undefined' not 'function'");
+    et("formulateDemo1(function () {})", formulateDemo1(function () {})).hasError("formulateDemo1(): 'Formulate.name' \"\" fails /^Formulate$/");
+    et("formulateDemo1(class Nope {})", formulateDemo1( /*#__PURE__*/_createClass(function Nope() {
+      _classCallCheck(this, Nope);
+    }))).hasError("formulateDemo1(): 'Formulate.name' \"Nope\" fails /^Formulate$/");
+    et("formulateDemo1(class Formulate {})", formulateDemo1( /*#__PURE__*/_createClass(function Formulate() {
+      _classCallCheck(this, Formulate);
+    }))).hasError("formulateDemo1(): 'Formulate.VERSION' is type 'undefined' not 'string'");
+    et("formulateDemo1(class Formulate { static VERSION = 'Also Nope' })", formulateDemo1((_class = /*#__PURE__*/_createClass(function Formulate() {
+      _classCallCheck(this, Formulate);
+    }), _defineProperty(_class, "VERSION", 'Also Nope'), _class))).hasError("formulateDemo1(): 'Formulate.VERSION' \"Also Nope\" fails /^0\\.0\\.1$/");
+    et("formulateDemo1(class Formulate { static VERSION = '0.0.1' })", formulateDemo1((_class2 = /*#__PURE__*/_createClass(function Formulate() {
+      _classCallCheck(this, Formulate);
+    }), _defineProperty(_class2, "VERSION", '0.0.1'), _class2))).hasError("formulateDemo1(): '$el' is type 'undefined' not 'object'");
+    et("formulateDemo1(class Formulate { static VERSION = '0.0.1' }, {})", formulateDemo1((_class3 = /*#__PURE__*/_createClass(function Formulate() {
+      _classCallCheck(this, Formulate);
+    }), _defineProperty(_class3, "VERSION", '0.0.1'), _class3), {})).hasError("formulateDemo1(): '$el.$log' is type 'undefined' not an object");
+    var $mock = document.createElement('div');
+    et("formulateDemo1(Formulate, { $log:$mock, $form0:{}, $form1:1 })", formulateDemo1(Formulate, {
+      $log: $mock,
+      $form0: {},
+      $form1: 1
+    })).hasError("formulateDemo1(): '$el.$form0' is not an instance of 'HTMLElement'");
+    et("formulateDemo1(Formulate, { $log:$mock, $form0:$mock, $form1:null })", formulateDemo1(Formulate, {
+      $log: $mock,
+      $form0: $mock,
+      $form1: null
+    })).hasError("formulateDemo1(): '$el.$form1' is null not an object"); // Working ok.
+
+    et("formulateDemo1(Formulate, { $log:$mock, $form0:$mock, $form1:$mock })", formulateDemo1(Formulate, {
+      $log: $mock,
+      $form0: $mock,
+      $form1: $mock
+    })).is(undefined);
   } // rufflib-formulate/src/formulate.js
 
   /* ---------------------------------- Tests --------------------------------- */
@@ -1179,14 +1361,20 @@
     expect.section('Formulate basics');
     var $el = document.createElement('div'); // Is a class.
 
-    et("typeof Formulate", _typeof(Formulate)).is('function'); // Invalid constructor arguments.
+    et("typeof Formulate // in JavaScript, a class is type 'function'", _typeof(Formulate)).is('function');
+    et("Formulate.name // minification should not squash '".concat(NAME, "'"), Formulate.name).is(NAME);
+    et("Formulate.VERSION // make sure we are testing ".concat(VERSION), Formulate.VERSION).is(VERSION);
+    et("typeof new Formulate() // invalid invocation, but still an object", _typeof(new Formulate())).is('object'); // Invalid constructor arguments.
 
-    et("new Formulate()", new Formulate()).hasError("new Formulate(): '$container' is not an HTMLElement");
+    et("new Formulate()", new Formulate()).hasError("new Formulate(): '$container' is type 'undefined' not 'object'");
+    et("new Formulate({})", new Formulate({})).hasError("new Formulate(): '$container' is not an instance of 'HTMLElement'");
     et("new Formulate($el)", new Formulate($el)).hasError("new Formulate(): 'identifier' is type 'undefined' not 'string'");
     et("new Formulate($el, '1abc')", new Formulate($el, '1abc')).hasError("new Formulate(): 'identifier' \"1abc\" fails /^[_a-z][_0-9a-z]*$/");
     et("new Formulate($el, 'abc')", new Formulate($el, 'abc')).hasError("new Formulate(): 'schema' is type 'undefined' not an object");
-    et("new Formulate($el, 'abc', {_meta:{},a:{kind:'number'},b:{kind:'nope!'}})", new Formulate($el, 'abc', {
-      _meta: {},
+    et("new Formulate($el, 'abc', {_meta:{title:'Ok'},a:{kind:'number'},b:{kind:'nope!'}})", new Formulate($el, 'abc', {
+      _meta: {
+        title: 'Ok'
+      },
       a: {
         kind: 'number'
       },
@@ -1201,7 +1389,17 @@
       _meta: {
         title: ''
       }
-    })).hasError("new Formulate(): 'schema._meta.title' \"\" fails /^[-_ 0-9a-z...2}$/i"); // constructor arguments ok.
+    })).hasError("new Formulate(): 'schema._meta.title' \"\" fails /^[-_ 0-9a-z...2}$/i");
+    var missingTitleSchema = {
+      _meta: {
+        title: 'The Top-Level Title Exists'
+      },
+      oops: {
+        _meta: {}
+      } // no `title` in here!
+
+    };
+    et("new Formulate($el, 'my_form', missingTitleSchema)", new Formulate($el, 'my_form', missingTitleSchema)).hasError("new Formulate(): 'schema.oops._meta.title' is type 'undefined' not 'string'"); // constructor arguments ok.
 
     et("new Formulate($el, 'abc', {_meta:{title:'Abc'}})", new Formulate($el, 'abc', {
       _meta: {
@@ -1215,6 +1413,24 @@
           title: 'Abc'
         }
       }
+    });
+    var typicalUsageSchema = {
+      _meta: {
+        title: 'My Form'
+      },
+      outer: {
+        _meta: {
+          title: 'Outer'
+        },
+        an_inner_boolean: Formulate["boolean"](false),
+        another_boolean: Formulate["boolean"](true)
+      },
+      outer_boolean: Formulate["boolean"](true)
+    };
+    et("new Formulate($el, 'my_form', typicalUsageSchema)", new Formulate($el, 'my_form', typicalUsageSchema)).has({
+      $container: $el,
+      identifier: 'my_form',
+      schema: typicalUsageSchema
     });
   } // rufflib-formulate/src/entry-point-for-tests.js
   // Run each test. You can comment-out some during development, to help focus on
@@ -1254,7 +1470,7 @@
 
     testFormulateBasics(expect, Formulate);
     testBuildRenderInstructions(expect);
-    testDemo1(expect);
+    testDemo1(expect, Formulate);
   }
 
   return formulateTest;

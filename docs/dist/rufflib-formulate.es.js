@@ -7,7 +7,7 @@
 
 
 /**
- * rufflib-validate 1.0.1
+ * rufflib-validate 1.3.0
  * A RuffLIB library for succinctly validating JavaScript values.
  * https://richplastow.com/rufflib-validate
  * @license MIT
@@ -42,6 +42,7 @@ function _type(value, name, typeStr) {
 
 const A = 'array';
 const B = 'boolean';
+const F = 'function';
 const I = 'integer';
 const N = 'number';
 const S = 'string';
@@ -57,6 +58,19 @@ function _validateAgainstSchema(
     schema,  // the schema to validate against
     path=[], // builds up a list of properties, as `_validateAgainstSchema()` recurses
 ) {
+
+    // Do an `instanceof` test, if the `_meta` object contains an `inst` key.
+    if (schema._meta.inst && ! (obj instanceof schema._meta.inst)) {
+        if (! name && path.length === 0)
+            this.err = `${this.prefix}: the top level object is not an instance of '${schema._meta.inst.name}'`;
+        else if (! name)
+            this.err = `${this.prefix}: '${path.join('.')}' of the top level object is not an instance of '${schema._meta.inst.name}'`;
+        else if (path.length === 0)
+            this.err = `${this.prefix}: '${name}' is not an instance of '${schema._meta.inst.name}'`;
+        else
+            this.err = `${this.prefix}: '${name}.${path.join('.')}' is not an instance of '${schema._meta.inst.name}'`;
+        return false;
+    }
 
     // Validate each key/value pair.
     for (let key in schema) {
@@ -340,6 +354,41 @@ function boolean(value, name) {
     return this._type(value, name, 'boolean')
 }
 
+// rufflib-validate/src/methods/class.js
+
+
+/* --------------------------------- Method --------------------------------- */
+
+// Public method which validates a class.
+// Note the trailing underscore, because `class` is a reserved word in JavaScript.
+function class_(value, name, schema) {
+    this.err = null;
+    if (this.skip) return true;
+
+    typeof name === S
+        ? name.slice(-11) === ' of a value' // @TODO improve this slow and arbitrary hack!
+            ? name
+            : `'${name}'`
+        : 'a value'
+    ;
+
+    // Deal with a value which is not a function.
+    if (! this._type(value, name, 'function')) return false;
+
+    // Short-circuit if only two arguments were supplied.
+    if (typeof schema === U) return true;
+
+    // Check that the `schema` argument is correct.
+    // @TODO optionally bypass this, when performance is important
+    const isCorrect = this.schema(schema, 'schema');
+    if (! isCorrect) throw Error(`Validate.class() incorrectly invoked: ${this.err}`);
+
+    // Validate `value` against the `schema`.
+    if (! this._validateAgainstSchema(value, name, schema)) return false;
+
+    return true;
+}
+
 // rufflib-validate/src/methods/integer.js
 
 // Public method which validates an integer like `10` or `-3.2e9`.
@@ -482,7 +531,6 @@ function object(value, name, schema) {
     // Check that the `schema` argument is correct.
     // @TODO optionally bypass this, when performance is important
     const isCorrect = this.schema(schema, 'schema');
-    // this.err = checkSchemaCorrectness(schema, 'schema');
     if (! isCorrect) throw Error(`Validate.object() incorrectly invoked: ${this.err}`);
 
     // Validate `value` against the `schema`.
@@ -497,12 +545,23 @@ function object(value, name, schema) {
 /* --------------------------------- Method --------------------------------- */
 
 // Public method which validates a schema object.
-function schema(value, name) {
+// The optional `metaSchema` argument defines properties which `_meta` objects
+// must contain. If `metaSchema` is omitted, `_meta` can be an empty object.
+function schema(value, name, metaSchema) {
     this.err = null;
     if (this.skip) return true;
 
+    // If present, check that the `metaSchema` is a plain object.
+    if (typeof metaSchema !== U) {
+        if (metaSchema === null || typeof metaSchema !== O || Array.isArray(metaSchema)) {
+            const is = getIs(metaSchema);
+            throw Error(`Validate.schema() incorrectly invoked: ${this.prefix}: `
+                + `optional 'metaSchema' is ${is} not an object`);
+        }
+    }
+
     // Recursively check that `value` is a correct `schema`.
-    const err = checkSchemaCorrectness(value, name, []);
+    const err = checkSchemaCorrectness(value, name, [], metaSchema, this);
     if (err) {
         this.err = `${this.prefix}: ${err}`;
         return false;
@@ -517,13 +576,14 @@ function schema(value, name) {
 // Checks that a given `schema` object is correctly formed.
 // Returns a string if the schema is incorrect, or `null` if it’s correct.
 // @TODO guard against cyclic objects
-function checkSchemaCorrectness(sma, name, path) {
+// @TODO make this into a private method, _checkSchemaCorrectness(), to avoid `that`
+function checkSchemaCorrectness(sma, name, path, metaSchema, that) {
 
     // Check that the `schema` is a plain object.
     if (sma === null || typeof sma !== O || Array.isArray(sma)) {
         const is = getIs(sma);
         if (! name && path.length === 0)
-            return `unnamed schema is ${is} not an object`;
+            return `the schema is ${is} not an object`;
         if (! name)
             return `'${path.join('.')}' of the schema is ${is} not an object`;
         if (path.length === 0)
@@ -536,7 +596,7 @@ function checkSchemaCorrectness(sma, name, path) {
     if (_meta === null || typeof _meta !== O || Array.isArray(_meta)) {
         const is = getIs(_meta);
         if (! name && path.length === 0)
-            return `unnamed schema '._meta' is ${is} not an object`;
+            return `top level '_meta' of the schema is ${is} not an object`;
         if (! name)
             return `'${path.join('.')}._meta' of the schema is ${is} not an object`;
         if (path.length === 0)
@@ -544,19 +604,62 @@ function checkSchemaCorrectness(sma, name, path) {
         return `'${name}.${path.join('.')}._meta' is ${is} not an object`;
     }
 
+    // If the special `_meta.inst` value exists, chack that it is an object with
+    // a `name` property.
+    const inst = sma._meta.inst;
+    if (typeof inst !== 'undefined') {
+        if (inst === null || typeof inst !== F || Array.isArray(inst)) {
+            const is = getIs(inst);
+            if (! name && path.length === 0)
+                return `top level '._meta.inst' of the schema is ${is} not type 'function'`;
+            if (! name)
+                return `'${path.join('.')}._meta.inst' of the schema is ${is} not type 'function'`;
+            if (path.length === 0)
+                return `'${name}._meta.inst' is ${is} not type 'function'`;
+            return `'${name}.${path.join('.')}._meta.inst' is ${is} not type 'function'`;
+        }
+        if (typeof inst.name !== 'string') {
+            const is = getIs(inst.name);
+            if (! name && path.length === 0)
+                return `top level '._meta.inst.name' of the schema is ${is} not 'string'`;
+            if (! name)
+                return `'${path.join('.')}._meta.inst.name' of the schema is ${is} not 'string'`;
+            if (path.length === 0)
+                return `'${name}._meta.inst.name' is ${is} not 'string'`;
+            return `'${name}.${path.join('.')}._meta.inst.name' is ${is} not 'string'`;
+        }
+    }
+
+    // Use `metaSchema` (if provided) to validate the `_meta` object.
+    // @TODO
+
     // Check each key/value pair.
     for (let key in sma) {
-        if (key === '_meta') continue; // ignore the special `_meta` property
-
         // Every value must be a plain object.
         const value = sma[key];
         if (value === null || typeof value !== O || Array.isArray(value)) {
             return fmtErr(name, path, key, `is ${getIs(value)} not an object`);
         }
 
+        // Validate the special `_meta` property.
+        if (key === '_meta') {
+            if (metaSchema) {
+                const n = name && path.length
+                    ? `${name}.${path.join('.')}._meta`
+                    : name
+                        ? `${name}._meta`
+                        : path.length
+                            ? `${path.join('.')}._meta`
+                            : `top level _meta`;
+                if (! that.object(value, n, metaSchema))
+                    return that.err.slice(that.prefix.length + 2);
+            }
+            continue;
+        }
+
         // Deal with a sub-schema.
         if (value._meta) {
-            const err = checkSchemaCorrectness(value, name, [...path, key]);
+            const err = checkSchemaCorrectness(value, name, [...path, key], metaSchema, that);
             if (err) return err;
             continue;
         }
@@ -777,7 +880,8 @@ function string(value, name, minSetOrRule, max) {
 
 /* --------------------------------- Import --------------------------------- */
 
-const VERSION$1 = '1.0.1';
+const NAME$1 = 'Validate';
+const VERSION$1 = '1.3.0';
 
 
 /* ---------------------------------- Class --------------------------------- */
@@ -800,6 +904,8 @@ const VERSION$1 = '1.0.1';
 //     sayOk(3, true); // ok! (less safe, but faster)
 //
 class Validate {
+    static name = NAME$1; // make sure minification doesn’t squash the `name` property
+    static VERSION = VERSION$1;
 
     constructor (prefix, skip) {
         this.err = null;
@@ -809,13 +915,12 @@ class Validate {
 
 }
 
-Validate.VERSION = VERSION$1;
-
 Validate.prototype._type = _type;
 Validate.prototype._validateAgainstSchema = _validateAgainstSchema;
 
 Validate.prototype.array = array;
 Validate.prototype.boolean = boolean;
+Validate.prototype.class = class_;
 Validate.prototype.integer = integer;
 Validate.prototype.number = number;
 Validate.prototype.object = object;
@@ -827,14 +932,15 @@ Validate.prototype.string = string;
 
 /* -------------------------------- Constants ------------------------------- */
 
+const NAME = 'Formulate';
+const VERSION = '0.0.1';
+
 const CSS_PREFIX = 'rl_f-'; // should have trailing '-'
 const ID_PREFIX = 'rl_f'; // should NOT have trailing '-'
 
 const RX_IDENTIFIER = /^[_a-z][_0-9a-z]*$/;
 const RX_META_TITLE = /^[-_ 0-9a-z]{1,32}$/i;
 const RX_PATH =       /^[_a-z][._0-9a-z]{0,254}$/;
-
-const VERSION = '0.0.1';
 
 // rufflib-formulate/src/helpers/build-render-instructions.js
 
@@ -871,19 +977,21 @@ function buildRenderInstructions(schema, path=ID_PREFIX, depth=1, skipValidation
     // Step through each property in the schema object.
     for (let key in schema) {
         const val = schema[key];
+        const { initially, kind } = val;
 
         // Ignore the `_meta` object.
         if (key === '_meta') continue;
 
         // If the value contains a 'kind' property, build an instruction for
         // rendering a field.
-        if (val.kind) {
+        if (kind) {
             const id = `${path}.${key}`;
             const v = new Validate('buildRenderInstructions()', skipValidation);
             if (! v.string(key, 'key', RX_IDENTIFIER) // must not contain a dot
+             || ! v[kind](initially, `${id}.initially`)
              || ! v.string(id, 'id', RX_PATH) // must be be too long
             ) return { error:v.err };
-            steps.push({ id, kind:val.kind });
+            steps.push({ id, initially, kind });
             fieldsetDownRef.height++;
             continue;
         }
@@ -1069,13 +1177,13 @@ function _buildFieldset(step) {
 
 /* ---------------------------------- Class --------------------------------- */
 
-// A RuffLIB library for succinctly validating JavaScript values.
+// A RuffLIB library for transforming an object schema into an HTML form.
 //
 // Typical usage:
 //
 //     new Formulate(
 //         document.querySelector('#wrap'),
-//         'my_form'
+//         'my_form',
 //         {
 //             _meta: { title:'My Form' },
 //             outer: {
@@ -1084,21 +1192,21 @@ function _buildFieldset(step) {
 //                 another_boolean: Formulate.boolean(true),
 //             },
 //             outer_boolean: Formulate.boolean(true),
-//         },
+//         }
 //     );
 //
 class Formulate {
+    static name = NAME; // make sure minification doesn’t squash the `name` property
+    static VERSION = VERSION;
 
     constructor($container, identifier, schema) {
 
         // Validate the constructor arguments.
-        if (! ($container instanceof HTMLElement))
-            return this.error = `new Formulate(): '$container' is not an HTMLElement`;
         const v = new Validate('new Formulate()', false);
-        if (! v.string(identifier, 'identifier', RX_IDENTIFIER)
-         || ! v.schema(schema, 'schema')
-         || ! v.object(schema._meta, 'schema._meta', {
-                _meta:{}, title:{ kind:'string', rule:RX_META_TITLE } })
+        if (! v.object($container, '$container', { _meta:{ inst:HTMLElement } })
+         || ! v.string(identifier, 'identifier', RX_IDENTIFIER)
+         || ! v.schema(schema, 'schema', { _meta:{},
+                    title:{ kind:'string', rule:RX_META_TITLE } })
         ) return this.error = v.err;
 
         // Store the constructor arguments.
@@ -1110,7 +1218,7 @@ class Formulate {
             schema, // schema
             `${ID_PREFIX}.${identifier}`, // path
             1, // depth
-            true, // skipValidation
+            false, // skipValidation
         );
         if (result.error) return this.error = result.error;
         const { height, steps } = result;
@@ -1136,8 +1244,6 @@ class Formulate {
         }
     }
 }
-
-Formulate.VERSION = VERSION;
 
 // rufflib-formulate/src/entry-point-main.js
 

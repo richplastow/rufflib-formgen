@@ -40,19 +40,21 @@ export function buildRenderInstructions(schema, path=ID_PREFIX, depth=1, skipVal
     // Step through each property in the schema object.
     for (let key in schema) {
         const val = schema[key];
+        const { initially, kind } = val;
 
         // Ignore the `_meta` object.
         if (key === '_meta') continue;
 
         // If the value contains a 'kind' property, build an instruction for
         // rendering a field.
-        if (val.kind) {
+        if (kind) {
             const id = `${path}.${key}`;
             const v = new Validate('buildRenderInstructions()', skipValidation);
             if (! v.string(key, 'key', RX_IDENTIFIER) // must not contain a dot
+             || ! v[kind](initially, `${id}.initially`)
              || ! v.string(id, 'id', RX_PATH) // must be be too long
             ) return { error:v.err };
-            steps.push({ id, kind:val.kind });
+            steps.push({ id, initially, kind });
             fieldsetDownRef.height++;
             continue;
         }
@@ -111,6 +113,9 @@ export function testBuildRenderInstructions(expect) {
     et(`${nm}({_meta:{}})`,
         funct({_meta:{}})).hasError(
         `${nm}(): '(schema) rl_f._meta.title' is type 'undefined' not 'string'`);
+    et(`${nm}({_meta:{title:'Ok'},foo:{_meta:{title:[]}}})`,
+        funct({_meta:{title:'Ok'},foo:{_meta:{title:[]}}})).hasError(
+        `${nm}(): '(schema) rl_f.foo._meta.title' is an array not type 'string'`);
     et(`${nm}({_meta:{title:'Abc'}}, 123)`,
         funct({_meta:{title:'Abc'}}, 123)).hasError(
         `${nm}(): 'path' is type 'number' not 'string'`);
@@ -128,8 +133,8 @@ export function testBuildRenderInstructions(expect) {
     et(`${nm}({_meta:{title:'Abc'}}, 'a'.repeat(256))`,
         funct({_meta:{title:'Abc'}}, 'a'.repeat(256))).hasError(
         `${nm}(): 'path' "aaaaaaaaaaa...aaaa" fails /^[_a-z][._0...54}$/`);
-    et(`${nm}({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))`,
-        funct({_meta:{title:'Abc'},zzzzz:{kind:'boolean'}}, 'a'.repeat(250))).hasError(
+    et(`${nm}({_meta:{title:'Abc'},zzzzz:{initially:true,kind:'boolean'}}, 'a'.repeat(250))`,
+        funct({_meta:{title:'Abc'},zzzzz:{initially:true,kind:'boolean'}}, 'a'.repeat(250))).hasError(
         `${nm}(): 'id' "aaaaaaaaaaa...zzzz" fails /^[_a-z][._0...54}$/`);
     et(`${nm}({_meta:{title:'A'},b:{_meta:{title:'B'},c:{_meta:{title:'C'},d:{_meta:{title:'D'}}}}}, 'a')`,
         funct({_meta:{title:'A'},b:{_meta:{title:'B'},c:{_meta:{title:'C'},d:{_meta:{title:'D'}}}}}, 'a')).hasError(
@@ -158,22 +163,23 @@ export function testBuildRenderInstructions(expect) {
                 { kind:'fieldsetUp' }
             ]
         });
-    et(`${nm}({a:{kind:'boolean'},_meta:{title:'Abc'}})`,
-        funct({a:{kind:'boolean'},_meta:{title:'Abc'}})).stringifiesTo({
+    et(`${nm}({a:{initially:false,kind:'boolean'},_meta:{title:'Abc'}})`,
+        funct({a:{initially:false,kind:'boolean'},_meta:{title:'Abc'}})).stringifiesTo({
             steps: [
                 { depth:1, height:2, id:ID_PREFIX, kind:'fieldsetDown', title:'Abc' },
-                { id:ID_PREFIX+'.a', kind:'boolean' },
+                { id:ID_PREFIX+'.a', initially:false, kind:'boolean' },
                 { kind:'fieldsetUp' }
             ]
         });
-    et(`${nm}({sub:{_meta:{title:'Sub'},_:{kind:'boolean'}},outer:{kind:'boolean'},_meta:{title:'Abc'}}, 'id')`,
-        funct({sub:{_meta:{title:'Sub'},_:{kind:'boolean'}},outer:{kind:'boolean'},_meta:{title:'Abc'}}, 'id')).stringifiesTo({
+    const bool = { initially:true, kind:'boolean' };
+    et(`${nm}({sub:{_meta:{title:'Sub'},_:bool},outer:bool,_meta:{title:'Abc'}}, 'id')`,
+        funct({sub:{_meta:{title:'Sub'},_:bool},outer:bool,_meta:{title:'Abc'}}, 'id')).stringifiesTo({
             steps: [
                 { depth: 1, height: 4, id: 'id', kind: 'fieldsetDown', title: 'Abc', },
                 { depth: 2, height: 2, id: 'id.sub', kind: 'fieldsetDown', title: 'Sub' },
-                { id: 'id.sub._', kind: 'boolean' },
+                { id: 'id.sub._', initially:true, kind: 'boolean' },
                 { kind: 'fieldsetUp' },
-                { id: 'id.outer', kind: 'boolean' },
+                { id: 'id.outer', initially:true, kind: 'boolean' },
                 { kind: 'fieldsetUp' }
             ]
         });
