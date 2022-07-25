@@ -4,7 +4,7 @@
 
 import Expect from 'rufflib-expect';
 import Formulate from './dist/rufflib-formulate.es.js';
-import formulateTest from './dist/rufflib-formulate-test.es.js';
+import formulateTest from './test/rufflib-formulate-test.es.js';
 
 // `npm test --full` means we should show full test results.
 const showFullResults = !! process.env.npm_config_full;

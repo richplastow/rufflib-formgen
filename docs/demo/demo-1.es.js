@@ -7,7 +7,7 @@
 
 
 /**
- * rufflib-validate 1.3.0
+ * rufflib-validate 2.0.0
  * A RuffLIB library for succinctly validating JavaScript values.
  * https://richplastow.com/rufflib-validate
  * @license MIT
@@ -881,7 +881,7 @@ function string(value, name, minSetOrRule, max) {
 /* --------------------------------- Import --------------------------------- */
 
 const NAME = 'Validate';
-const VERSION = '1.3.0';
+const VERSION = '2.0.0';
 
 
 /* ---------------------------------- Class --------------------------------- */

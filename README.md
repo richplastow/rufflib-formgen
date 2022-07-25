@@ -34,7 +34,7 @@ Run the test suite in ‘src/’, while working on this library:
 `npm test --src`  
 `npm start --src --open --test`  
 
-Build the minified and unminified bundles, using settings in rollup.config.js:  
+Build the minified and unminified bundles in ‘dist/’ and ‘docs/’:  
 `npm run build`
 
 Run the test suite in ‘docs/’, after a build:  

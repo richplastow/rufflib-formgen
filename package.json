@@ -2,10 +2,11 @@
     "name": "rufflib-formulate",
     "version": "0.0.1",
     "description": "A RuffLIB library for transforming an object schema into an HTML form.",
-    "main": "docs/dist/rufflib-formulate.es.js",
+    "main": "dist/rufflib-formulate.es.js",
     "type": "module",
     "scripts": {
-        "build": "rollup -c",
+        "build": "npm run clean && rollup -c && mkdir docs/dist && cp dist/* docs/dist",
+        "clean": "rm -r dist; rm docs/demo/*.js; rm -r docs/dist; rm -r docs/test",
         "test:docs": "node docs/run-nodejs-tests.js # test docs/ using NodeJS",
         "test:src": "node src/run-nodejs-tests.js # test src/ using NodeJS",
         "test": "[ -z $npm_config_src ]&&D=docs||D=src;npm run test:$D"
@@ -23,7 +24,7 @@
         "@rollup/plugin-node-resolve": "^13.3.0",
         "rollup-plugin-copy": "^2.0.1",
         "rollup-plugin-terser": "^7.0.2",
-        "rufflib-expect": "^2.0.1",
-        "rufflib-validate": "^1.3.0"
+        "rufflib-expect": "^3.0.0",
+        "rufflib-validate": "^2.0.0"
     }
 }

@@ -21,16 +21,16 @@ export default [
         input: 'src/entry-point-main.js',
         output: {
             banner,
-            file: 'docs/dist/rufflib-formulate.es.js',
-            format: 'es', // eg for `node docs/run-nodejs-tests.js`
+            file: 'dist/rufflib-formulate.es.js', // a copy of this is used by...
+            format: 'es', // ...`docs/run-nodejs-tests.js`
         },
         plugins: [nodeResolve({ resolveOnly:['rufflib-validate'] })]
     },
     {
-        input: 'docs/dist/rufflib-formulate.es.js',
+        input: 'dist/rufflib-formulate.es.js',
         output: {
-            file: 'docs/dist/rufflib-formulate.umd.es5.min.js',
-            format: 'umd', // eg for `docs/index.html` in legacy browsers
+            file: 'dist/rufflib-formulate.umd.es5.min.js', // a copy of this is used by...
+            format: 'umd', // ...`docs/run-browser-tests.html`
             name: 'rufflib.formulate.main', // `var Formulate = rufflib.formulate.main`
         },
         // See https://babeljs.io/docs/en/babel-preset-env
@@ -46,7 +46,7 @@ export default [
         input: 'src/demo/demo-1.js',
         output: {
             banner: banner.replace(' * ', ' * Demo 1 for '),
-            file: 'docs/demo/demo-1.es.js',
+            file: 'docs/demo/demo-1.es.js', // only used to generate demo-1.umd.es5.js
             format: 'es',
         },
         plugins: [nodeResolve({ resolveOnly:['rufflib-validate'] })]
@@ -54,8 +54,8 @@ export default [
     {
         input: 'docs/demo/demo-1.es.js',
         output: {
-            file: 'docs/demo/demo-1.umd.es5.js',
-            format: 'umd', // eg for `docs/demo/demo-1.html` in legacy browsers
+            file: 'docs/demo/demo-1.umd.es5.js', // this is used by...
+            format: 'umd', // ...`docs/demo/demo-1.html`
             name: 'rufflib.formulate.demo1' // `rufflib.formulate.demo1.formulateDemo1(...)`
         },
         plugins: [
@@ -63,30 +63,30 @@ export default [
         ]
     },
 
-    // Build unit test distribution files.
+    // Build unit test files.
     {
         input: 'src/entry-point-for-tests.js',
         output: {
             banner: banner.replace(' * ', ' * Unit tests for '),
-            file: 'docs/dist/rufflib-formulate-test.es.js',
-            format: 'es', // eg for `node docs/run-nodejs-tests.js`
+            file: 'docs/test/rufflib-formulate-test.es.js', // this is used by...
+            format: 'es', // ...`docs/run-nodejs-tests.js`
         },
         plugins: [nodeResolve({ resolveOnly:['rufflib-validate'] })]
     },
     {
-        input: 'docs/dist/rufflib-formulate-test.es.js',
+        input: 'docs/test/rufflib-formulate-test.es.js',
         output: {
-            file: 'docs/dist/rufflib-formulate-test.umd.js',
-            format: 'umd', // eg for `docs/run-browser-tests.html` in legacy browsers
+            file: 'docs/test/rufflib-formulate-test.umd.js', // this is used by...
+            format: 'umd', // ...`docs/run-browser-tests.html` in legacy browsers
             name: 'rufflib.formulate.test' // `rufflib.formulate.test(expect, Formulate)`
         },
         // See https://babeljs.io/docs/en/babel-preset-env
         plugins: [
             babel({ babelHelpers: 'bundled' }),
             copy({
-                outputFolder: 'docs/lib',
+                outputFolder: 'docs/test',
                 targets: [
-                    'node_modules/rufflib-expect/docs/dist/rufflib-expect.umd.es5.min.js',
+                    'node_modules/rufflib-expect/dist/rufflib-expect.umd.es5.min.js',
                 ]
             }),
         ]

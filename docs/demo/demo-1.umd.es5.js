@@ -95,7 +95,7 @@
    */
 
   /**
-   * rufflib-validate 1.3.0
+   * rufflib-validate 2.0.0
    * A RuffLIB library for succinctly validating JavaScript values.
    * https://richplastow.com/rufflib-validate
    * @license MIT
@@ -865,7 +865,7 @@
 
 
   var NAME = 'Validate';
-  var VERSION = '1.3.0';
+  var VERSION = '2.0.0';
   /* ---------------------------------- Class --------------------------------- */
   // A RuffLIB library for succinctly validating JavaScript values.
   //
