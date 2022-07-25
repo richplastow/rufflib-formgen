@@ -6,10 +6,17 @@
       initial-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="icon" href="data:;base64,iVBORwOKGO=" />
+    <link rel="stylesheet" href="../css/normalize.min.css">
     <title>Formulate | Demo 1</title>
     <style>
-        body,a{margin:0;color:#dbffd7;font:14px/2 Arial;text-align:center}
+        body,a{margin:0;color:#dbffd7;font:10px/2 Verdana,Arial;text-align:center}
+        @media screen and (min-width:450px){body{font-size:15px}}
         body{background:#27514f}
+        nav{position:absolute;left:16px;top:12px;font-weight:bold;z-index:1}
+        a{color:#27c0e7;text-decoration:none;transition:color 0.3s}
+        a:hover{color:#0ff}
+        .btn{padding:4px 9px;background:#fff}
+        .btn{border-right:8px solid #f00;border-left:8px solid #0ff}
         h2{position:relative;margin:0;white-space:nowrap}
         pre,a{padding:4px 8px;border-radius:4px;text-decoration:none}
         pre{margin:9px;text-align:left}
@@ -22,6 +29,7 @@
     'start with “./”'))document.getElementById('err').innerHTML+=m+'\n    '+s
     +':'+l+':'+c+'\n'} // Firefox has a spurious 'start with “./”' error</script>
 
+    <nav><a class="btn" href="../index.html">RuffLIB Formulate</a></nav>
     <h2>Formulate | Demo 1</h2>
 
     <style>
