@@ -1,10 +1,10 @@
-// rufflib-formulate/docs/run-nodejs-tests.js
+// rufflib-formulate/src/docs/test/run-nodejs-tests.js
 
 /* ----------------------------- Imports and Env ---------------------------- */
 
 import Expect from 'rufflib-expect';
-import Formulate from './dist/rufflib-formulate.es.js';
-import formulateTest from './test/rufflib-formulate-test.es.js';
+import Formulate from '../../main.js';
+import formulateTest from '../../main-test.js';
 
 // `npm test --full` means we should show full test results.
 const showFullResults = !! process.env.npm_config_full;
@@ -20,7 +20,7 @@ if (Formulate.VERSION !== process.env.npm_package_version) throw Error(
     `Formulate.VERSION '${Formulate.VERSION}' !== package.json version`);
 
 // Run the test suite.
-const expect = new Expect('Formulate Test Suite (dist, NodeJS)');
+const expect = new Expect('Formulate Test Suite (src, NodeJS)');
 formulateTest(expect, Formulate);
 
 // Display the results.

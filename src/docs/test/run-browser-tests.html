@@ -15,15 +15,14 @@
     <meta name="apple-mobile-web-app-title" content="RuffLIB Formulate | Demo 1">
     <meta name="application-name" content="RuffLIB Formulate | Demo 1">
     <meta name="theme-color" content="#000000">
-    <title>RuffLIB Formulate | Demo 1</title>
+    <title>RuffLIB Formulate | Tests</title>
     <style>
-        body,a{margin:0;color:#dbffd7;font:14px/2 Arial;text-align:center}
-        body{background:#27514f}
-        h2{position:relative;margin:0;white-space:nowrap}
+        body{color:#eee;font:10px/2 Verdana,Arial;text-align:center}
+        @media screen and (min-width:450px){body{font-size:15px}}
+        body{padding:9px;min-width:282px;background:#000}
         pre,a{padding:4px 8px;border-radius:4px;text-decoration:none}
         pre{margin:9px;text-align:left}
         #err{padding:0 8px;background:#491f31;color:#fbb}
-        #log{background:#22342f}
     </style>
 </head>
 <body>
@@ -31,44 +30,9 @@
     'start with “./”'))document.getElementById('err').innerHTML+=m+'\n    '+s
     +':'+l+':'+c+'\n'} // Firefox has a spurious 'start with “./”' error</script>
 
-    <h2>RuffLIB Formulate | Demo 1</h2>
-
-    <style>
-        /* Normalise the styling of the Formulate sidebar and its content. */
-        .rl_f-sidebar{text-align:left}
-        .rl_f-sidebar *{user-select:none;-webkit-user-select:none;cursor:default}
-        .rl_f-sidebar,.rl_f-form,.rl_f-fieldset,.rl_f-row{margin:0;padding:0}
-        .rl_f-fieldset{border:none}
-        /* Position the sidebar and its content. */
-        /* Note that .rl_f-form and .rl_f-fieldset height are set in code. */
-        .rl_f-sidebar{position:fixed;top:8px;right:8px;bottom:8px;width:200px}
-        .rl_f-form{padding:8px 0;margin:0 0 8px 0}
-        .rl_f-form,.rl_f-fieldset{overflow:hidden;transition:height 0.2s}
-        .rl_f-row{display:block;padding:0 8px;height:30px}
-        .rl_f-title{padding:0 8px;height:30px}
-        .rl_f-arrow{display:inline-block}
-        /* Indent fieldsets, and hide their content when minimised. */
-        .rl_f-fieldset{padding-left:8px}
-        .rl_f-fieldset.rl_f-depth-1{padding:0}
-        /* Colours. */
-        .rl_f-form{background:#111}
-        .rl_f-fieldset{background:#224}
-        .rl_f-fieldset:hover{background:#336}
-        .rl_f-row{background:#333}
-        .rl_f-row:hover{background:#666}
-        .rl_f-row.rl_f-boolean{background:#422}
-        .rl_f-row.rl_f-boolean:hover{background:#633}
-        /* Arrows and titles */
-        .rl_f-arrow{transform:rotate(90deg);transition:transform 0.2s}
-        .rl_f-fieldset.rl_f-min >.rl_f-title .rl_f-arrow{transform:rotate(0deg)}
-        .rl_f-depth-1 >.rl_f-title{font-weight:bold}
-    </style>
-
-    <aside class="rl_f-sidebar">
-        <form id="form-0" class="rl_f-form">Loading...</form>
-        <form id="form-1" class="rl_f-form">Loading...</form>
-    </aside>
-    <pre id="log">Loading...</pre>
+    <nav><a class="btn" href="../index.html">RuffLIB Formulate</a></nav>
+    <h2>RuffLIB Formulate | Tests</h2>
+    <div id="test-output">Loading...</div>
 
     <script>!function(d){
 
@@ -88,36 +52,46 @@
             d.body.appendChild($s);
         }
 
-        // Generates three scripts designed to run in the public folder.
+        // Generates four scripts designed to run in the public folder.
         // This is production code, which may need to run in legacy browsers.
         function genPublicScripts() {
-
-            // <script src="demo-1.umd.es5.js" />
-            genScript({ src:'demo-1.umd.es5.js' });
 
             // <script src="../dist/rufflib-formulate.umd.es5.min.js" />
             genScript({ src:'../dist/rufflib-formulate.umd.es5.min.js' });
 
-            // <script>!function(){ var Formulate = rufflib.formulate.main; ...
+            // <script src="rufflib-expect.umd.es5.min.js" />
+            genScript({ src:'rufflib-expect.umd.es5.min.js' });
+
+            // <script src="rufflib-formulate-test.umd.js" />
+            genScript({ src:'rufflib-formulate-test.umd.js' });
+
+            // <script>!function(){ var Expect = rufflib.expect.main; ...
             genScript({ code:[
                 "!function(){",
                 "    var clear = setInterval(function() {",
-                "        if (window.rufflib && rufflib.formulate && rufflib.formulate.main && rufflib.formulate.demo1) {",
+                "        if (window.rufflib && rufflib.expect && rufflib.expect.main && rufflib.formulate && rufflib.formulate.main && rufflib.formulate.test) {",
                 "            clearInterval(clear);",
                 "            init();",
                 "        }",
                 "    }, 10);",
                 "    function init(){",
+                "        var Expect = rufflib.expect.main;",
                 "        var Formulate = rufflib.formulate.main;",
-                "        var formulateDemo1 = rufflib.formulate.demo1.formulateDemo1;",
-                "        formulateDemo1(",
-                "            Formulate,",
-                "            {",
-                "                $log: document.querySelector('#log'),",
-                "                $form0: document.querySelector('#form-0'),",
-                "                $form1: document.querySelector('#form-1')",
-                "            }",
-                "        );",
+                "        var formulateTest = rufflib.formulate.test;",
+                "",
+                "        // Generate the <STYLE> element.",
+                "        var $css = document.createElement('style');",
+                "        $css.innerHTML = Expect.generateCss('body', '#test-output');",
+                "        document.head.appendChild($css);",
+                "",
+                "        // Run the test suite.",
+                "        var expect = new Expect('Formulate Test Suite (dist, browser)');",
+                "        formulateTest(expect, Formulate);",
+                "",
+                "        // Display the results.",
+                "        document.body.classList.add(expect.status);",
+                "        document.querySelector('#test-output').innerHTML =",
+                "            expect.render('Html', '', true);",
                 "    }",
                 "}()"
             ]});
@@ -135,25 +109,33 @@
             genScript({ type:'importmap', code:[
                 '{',
                 '    "imports": {',
-                '        "formulateDemo1": "./demo-1.js",',
+                '        "Expect": "./__rufflib-expect-dist__/rufflib-expect.es.js",',
                 '        "Formulate": "../__src__/main.js",',
+                '        "formulateTest": "../__src__/main-test.js",',
                 '        "rufflib-validate": "./__rufflib-validate-dist__/rufflib-validate.es.js"',
                 '    }',
                 '}',
             ]});
 
-            // <script type="module"> import Formulate from 'Formulate'; ...
+            // <script type="module"> import Expect from 'Expect'; ...
             genScript({ type:'module', code:[
+                "import Expect from 'Expect';",
                 "import Formulate from 'Formulate';",
-                "import { formulateDemo1 } from 'formulateDemo1';",
-                "formulateDemo1(",
-                "    Formulate,",
-                "    {",
-                "        $log: document.querySelector('#log'),",
-                "        $form0: document.querySelector('#form-0'),",
-                "        $form1: document.querySelector('#form-1')",
-                "    }",
-                ");",
+                "import formulateTest from 'formulateTest';",
+                "",
+                "// Generate the <STYLE> element.",
+                "const $css = document.createElement('style');",
+                "$css.innerHTML = Expect.generateCss('body', '#test-output');",
+                "document.head.appendChild($css);",
+                "",
+                "// Run the test suite.",
+                "const expect = new Expect('Formulate Test Suite (src, browser)');",
+                "formulateTest(expect, Formulate);",
+                "",
+                "// Display the results.",
+                "document.body.classList.add(expect.status);",
+                "document.querySelector('#test-output').innerHTML =",
+                "    expect.render('Html', '', true);",
             ]});
 
         }

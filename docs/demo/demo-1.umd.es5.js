@@ -907,7 +907,7 @@
   Validate.prototype.number = number;
   Validate.prototype.object = object;
   Validate.prototype.schema = schema;
-  Validate.prototype.string = string; // rufflib-formulate/src/demo-1.js
+  Validate.prototype.string = string; // rufflib-formulate/src/docs/demo/demo-1.js
 
   /* ---------------------------------- Main ---------------------------------- */
   // Runs ‘Demo 1’.

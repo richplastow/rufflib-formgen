@@ -5,7 +5,7 @@ __A RuffLIB library for transforming an object schema into an HTML form.__
 ▶&nbsp; __Version:__ 0.0.1  
 ▶&nbsp; __Repo:__ <https://github.com/richplastow/rufflib-formulate>  
 ▶&nbsp; __Homepage:__ <https://richplastow.com/rufflib-formulate>  
-▶&nbsp; __Tests:__ <https://richplastow.com/rufflib-formulate/run-browser-tests.html>  
+▶&nbsp; __Tests:__ <https://richplastow.com/rufflib-formulate/test/run-browser-tests.html>  
 ▶&nbsp; __Demo 1:__ <https://richplastow.com/rufflib-formulate/demo/demo-1.html>  
 
 

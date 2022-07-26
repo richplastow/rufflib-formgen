@@ -1,10 +1,10 @@
-// rufflib-formulate/src/run-nodejs-tests.js
+// rufflib-formulate/src/docs/test/run-nodejs-tests.js
 
 /* ----------------------------- Imports and Env ---------------------------- */
 
 import Expect from 'rufflib-expect';
-import Formulate from './entry-point-main.js';
-import formulateTest from './entry-point-for-tests.js';
+import Formulate from '../../main.js';
+import formulateTest from '../../main-test.js';
 
 // `npm test --full` means we should show full test results.
 const showFullResults = !! process.env.npm_config_full;

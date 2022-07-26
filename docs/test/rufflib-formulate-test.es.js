@@ -1121,7 +1121,7 @@ function testBuildRenderInstructions(expect) {
 
 }
 
-// rufflib-formulate/src/demo-1.js
+// rufflib-formulate/src/docs/demo/demo-1.js
 
 
 /* ---------------------------------- Main ---------------------------------- */
@@ -1301,7 +1301,7 @@ function testFormulateBasics(expect, Formulate) {
         });
 }
 
-// rufflib-formulate/src/entry-point-for-tests.js
+// rufflib-formulate/src/main-test.js
 
 // Run each test. You can comment-out some during development, to help focus on
 // individual tests. But make sure all tests are uncommented before committing.

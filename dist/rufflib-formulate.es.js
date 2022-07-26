@@ -1245,6 +1245,4 @@ class Formulate {
     }
 }
 
-// rufflib-formulate/src/entry-point-main.js
-
 export { Formulate as default };

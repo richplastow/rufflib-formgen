@@ -1,4 +1,4 @@
-// rufflib-formulate/src/demo-1.js
+// rufflib-formulate/src/docs/demo/demo-1.js
 
 // The ‘main’ file for bundling the first Formulate demo.
 
