@@ -19,8 +19,14 @@ const sectionMustContain = process.env.npm_config_section || '';
 if (Formulate.VERSION !== process.env.npm_package_version) throw Error(
     `Formulate.VERSION '${Formulate.VERSION}' !== package.json version`);
 
+// Determine whether this .js file is the original in src/docs/test, or has been
+// copied to docs/test during the build process.
+const RUFFLIB_ENV = import.meta.url.includes('/src/docs/test/')
+    ? 'source' : 'public';
+
 // Run the test suite.
-const expect = new Expect('Formulate Test Suite (src, NodeJS)');
+const expect = new Expect(
+    `Formulate Test Suite (${RUFFLIB_ENV === 'source' ? 'src' : 'dist'}, NodeJS)`);
 formulateTest(expect, Formulate);
 
 // Display the results.
