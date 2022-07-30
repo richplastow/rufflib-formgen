@@ -30,6 +30,20 @@
     'start with “./”'))document.getElementById('err').innerHTML+=m+'\n    '+s
     +':'+l+':'+c+'\n'} // Firefox has a spurious 'start with “./”' error</script>
 
+    <!-- <BODY class="rufflib-env-public"> or <BODY class="rufflib-env-source"> -->
+    <script>document.body.classList.add('rufflib-env-'+window.RUFFLIB_ENV)</script>
+
+    <!-- If RUFFLIB_ENV is 'public', let the user choose legacy or modern JS. -->
+    <div><span id="rufflib-source-label">Source</span><select id="rufflib-js-format">
+        <option value="legacy">Legacy</option>
+        <option value="modern">Modern</option>
+    </select></div><script>!function(d){var $s=d.getElementById('rufflib-js-format')
+    $s.value=localStorage.getItem('rufflib-js-format')||'legacy';$s.addEventListener
+    ('change',function(){localStorage.setItem('rufflib-js-format',$s.value)
+    location.reload()})}(document)</script><style>
+    #rufflib-source-label,body.rufflib-env-source #rufflib-js-format{display:none}
+    body.rufflib-env-source #rufflib-source-label{display:inline}</style>
+
     <nav><a class="btn" href="../index.html">RuffLIB Formulate</a></nav>
     <h2>RuffLIB Formulate | Tests</h2>
     <div id="test-output">Loading...</div>
@@ -37,10 +51,13 @@
     <script>!function(d){
 
         // Use production code or development code, depending on the environment.
-        if (window.RUFFLIB_ENV === 'public')
-            genPublicScripts()
-        else
-            genSourceScripts();
+        // If production code, let the user choose between legacy and modern code. 
+        if (window.RUFFLIB_ENV === 'source') {
+            genSourceModernScripts();
+        } else {
+            document.getElementById('rufflib-js-format').value === 'legacy'
+                ? genPublicLegacyScripts() : genPublicModernScripts() ;
+        }
 
         // Generates a <SCRIPT> element, and appends it to the <BODY>.
         function genScript(o) { // options
@@ -54,7 +71,7 @@
 
         // Generates four scripts designed to run in the public folder.
         // This is production code, which may need to run in legacy browsers.
-        function genPublicScripts() {
+        function genPublicLegacyScripts() {
 
             // <script src="../dist/rufflib-formulate.umd.es5.min.js" />
             genScript({ src:'../dist/rufflib-formulate.umd.es5.min.js' });
@@ -65,7 +82,7 @@
             // <script src="rufflib-formulate-test.umd.js" />
             genScript({ src:'rufflib-formulate-test.umd.js' });
 
-            // <script>!function(){ var Expect = rufflib.expect.main; ...
+            // <script>!function(){ var clear = setInterval(function() { ...
             genScript({ code:[
                 "!function(){",
                 "    var clear = setInterval(function() {",
@@ -74,33 +91,43 @@
                 "            init();",
                 "        }",
                 "    }, 10);",
-                "    function init(){",
-                "        var Expect = rufflib.expect.main;",
-                "        var Formulate = rufflib.formulate.main;",
-                "        var formulateTest = rufflib.formulate.test;",
-                "",
-                "        // Generate the <STYLE> element.",
-                "        var $css = document.createElement('style');",
-                "        $css.innerHTML = Expect.generateCss('body', '#test-output');",
-                "        document.head.appendChild($css);",
-                "",
-                "        // Run the test suite.",
-                "        var expect = new Expect('Formulate Test Suite (dist, browser)');",
-                "        formulateTest(expect, Formulate);",
-                "",
-                "        // Display the results.",
-                "        document.body.classList.add(expect.status);",
-                "        document.querySelector('#test-output').innerHTML =",
-                "            expect.render('Html', '', true);",
-                "    }",
-                "}()"
+                "    function init(){"]
+                .concat(
+                    getLegacyTestRunnerCode('Formulate Test Suite (dist, legacy browser)'),
+                    "    }",
+                    "}()"
+                )
+            });
+
+        }
+
+        // Generates three scripts designed to run in the public folder.
+        // This is production code, and assumes a modern browser.
+        function genPublicModernScripts() {
+
+            // <script async src="../shims/es-module-shims.js" />
+            genScript({ async:true, src:'../shims/es-module-shims.js' });
+
+            // <script type="importmap">{ "imports": { ...
+            genScript({ type:'importmap', code:[
+                '{',
+                '    "imports": {',
+                '        "Expect": "./rufflib-expect.es.js",',
+                '        "Formulate": "../dist/rufflib-formulate.es.js",',
+                '        "formulateTest": "./rufflib-formulate-test.es.js"',
+                '    }',
+                '}',
             ]});
+
+            // <script type="module"> import Expect from 'Expect'; ...
+            genScript({ type:'module', code:getModernTestRunnerCode(
+                'Formulate Test Suite (dist, modern browser)')});
 
         }
 
         // Generates three scripts designed to run in the source folder.
         // This is only used during development, and assumes a modern browser.
-        function genSourceScripts() {
+        function genSourceModernScripts() {
 
             // <script async src="../shims/es-module-shims.js" />
             genScript({ async:true, src:'../shims/es-module-shims.js' });
@@ -118,7 +145,37 @@
             ]});
 
             // <script type="module"> import Expect from 'Expect'; ...
-            genScript({ type:'module', code:[
+            genScript({ type:'module', code:getModernTestRunnerCode(
+                'Formulate Test Suite (src, modern browser)')});
+
+        }
+
+        // Code which legacy browsers use to run the test suite.
+        function getLegacyTestRunnerCode(suiteTitle) {
+            return [
+                "        var Expect = rufflib.expect.main;",
+                "        var Formulate = rufflib.formulate.main;",
+                "        var formulateTest = rufflib.formulate.test;",
+                "",
+                "        // Generate the <STYLE> element.",
+                "        var $css = document.createElement('style');",
+                "        $css.innerHTML = Expect.generateCss('body', '#test-output');",
+                "        document.head.appendChild($css);",
+                "",
+                "        // Run the test suite.",
+                `        var expect = new Expect('${suiteTitle}');`,
+                "        formulateTest(expect, Formulate);",
+                "",
+                "        // Display the results.",
+                "        document.body.classList.add(expect.status);",
+                "        document.querySelector('#test-output').innerHTML =",
+                "            expect.render('Html', '', true);",
+            ];
+        }
+
+        // Code which modern browsers use to run the test suite.
+        function getModernTestRunnerCode(suiteTitle) {
+            return [
                 "import Expect from 'Expect';",
                 "import Formulate from 'Formulate';",
                 "import formulateTest from 'formulateTest';",
@@ -129,15 +186,14 @@
                 "document.head.appendChild($css);",
                 "",
                 "// Run the test suite.",
-                "const expect = new Expect('Formulate Test Suite (src, browser)');",
+                `const expect = new Expect('${suiteTitle}');`,
                 "formulateTest(expect, Formulate);",
                 "",
                 "// Display the results.",
                 "document.body.classList.add(expect.status);",
                 "document.querySelector('#test-output').innerHTML =",
                 "    expect.render('Html', '', true);",
-            ]});
-
+            ];
         }
 
     }(document)</script>

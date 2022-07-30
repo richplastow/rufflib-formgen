@@ -7,8 +7,8 @@
     "scripts": {
         "build": "npm run clean && rollup -c && npm run build:css && npm run build:module && npm run build:static",
         "build:css": "node scripts/build-css.js",
-        "build:module": "cp node_modules/rufflib-expect/dist/rufflib-expect.umd.es5.min.js docs/test",
-        "build:static": "cp -r {dist,src/docs/{index.html,img,test}} docs && cp src/docs/demo/*.html docs/demo",
+        "build:module": "cp node_modules/rufflib-expect/dist/rufflib-expect.{umd.es5.min,es}.js docs/test",
+        "build:static": "cp -r {dist,src/docs/{index.html,img,shims,test}} docs && cp src/docs/demo/*.html docs/demo",
         "clean": "rm -r dist ||:; rm -r docs ||:",
         "test:dist": "node docs/test/run-nodejs-tests.js # test dist/ using NodeJS",
         "test:src": "node src/docs/test/run-nodejs-tests.js # test src/ using NodeJS",

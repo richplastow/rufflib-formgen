@@ -30,7 +30,7 @@ new Formulate(
 
 ## Dev, Test and Build
 
-Run the test suite in ‘src/’, while working on this library:  
+Run the test suite in ‘src/docs/’, while working on this library:  
 `npm test --src`  
 `npm start --src --open --test`  
 

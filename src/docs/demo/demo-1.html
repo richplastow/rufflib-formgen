@@ -31,6 +31,20 @@
     'start with “./”'))document.getElementById('err').innerHTML+=m+'\n    '+s
     +':'+l+':'+c+'\n'} // Firefox has a spurious 'start with “./”' error</script>
 
+    <!-- <BODY class="rufflib-env-public"> or <BODY class="rufflib-env-source"> -->
+    <script>document.body.classList.add('rufflib-env-'+window.RUFFLIB_ENV)</script>
+
+    <!-- If RUFFLIB_ENV is 'public', let the user choose legacy or modern JS. -->
+    <div><span id="rufflib-source-label">Source</span><select id="rufflib-js-format">
+        <option value="legacy">Legacy</option>
+        <option value="modern">Modern</option>
+    </select></div><script>!function(d){var $s=d.getElementById('rufflib-js-format')
+    $s.value=localStorage.getItem('rufflib-js-format')||'legacy';$s.addEventListener
+    ('change',function(){localStorage.setItem('rufflib-js-format',$s.value)
+    location.reload()})}(document)</script><style>
+    #rufflib-source-label,body.rufflib-env-source #rufflib-js-format{display:none}
+    body.rufflib-env-source #rufflib-source-label{display:inline}</style>
+
     <h2>RuffLIB Formulate | Demo 1</h2>
 
     <style>
@@ -73,10 +87,13 @@
     <script>!function(d){
 
         // Use production code or development code, depending on the environment.
-        if (window.RUFFLIB_ENV === 'public')
-            genPublicScripts()
-        else
-            genSourceScripts();
+        // If production code, let the user choose between legacy and modern code. 
+        if (window.RUFFLIB_ENV === 'source') {
+            genSourceModernScripts();
+        } else {
+            document.getElementById('rufflib-js-format').value === 'legacy'
+                ? genPublicLegacyScripts() : genPublicModernScripts() ;
+        }
 
         // Generates a <SCRIPT> element, and appends it to the <BODY>.
         function genScript(o) { // options
@@ -90,7 +107,7 @@
 
         // Generates three scripts designed to run in the public folder.
         // This is production code, which may need to run in legacy browsers.
-        function genPublicScripts() {
+        function genPublicLegacyScripts() {
 
             // <script src="demo-1.umd.es5.js" />
             genScript({ src:'demo-1.umd.es5.js' });
@@ -98,7 +115,7 @@
             // <script src="../dist/rufflib-formulate.umd.es5.min.js" />
             genScript({ src:'../dist/rufflib-formulate.umd.es5.min.js' });
 
-            // <script>!function(){ var Formulate = rufflib.formulate.main; ...
+            // <script>!function(){ var clear = setInterval(function() { ...
             genScript({ code:[
                 "!function(){",
                 "    var clear = setInterval(function() {",
@@ -107,7 +124,64 @@
                 "            init();",
                 "        }",
                 "    }, 10);",
-                "    function init(){",
+                "    function init(){"]
+                .concat(
+                    getLegacyDemoRunnerCode(),
+                    "    }",
+                    "}()"
+                )
+            });
+
+        }
+
+        // Generates three scripts designed to run in the public folder.
+        // This is production code, and assumes a modern browser.
+        function genPublicModernScripts() {
+
+            // <script async src="../shims/es-module-shims.js" />
+            genScript({ async:true, src:'../shims/es-module-shims.js' });
+
+            // <script type="importmap">{ "imports": { ...
+            genScript({ type:'importmap', code:[
+                '{',
+                '    "imports": {',
+                '        "Formulate": "../dist/rufflib-formulate.es.js",',
+                '        "formulateDemo1": "./demo-1.es.js"',
+                '    }',
+                '}',
+            ]});
+
+            // <script type="module"> import Formulate from 'Formulate'; ...
+            genScript({ type:'module', code:getModernDemoRunnerCode()});
+
+        }
+
+        // Generates three scripts designed to run in the source folder.
+        // This is only used during development, and assumes a modern browser.
+        function genSourceModernScripts() {
+
+            // <script async src="../shims/es-module-shims.js" />
+            genScript({ async:true, src:'../shims/es-module-shims.js' });
+
+            // <script type="importmap">{ "imports": { ...
+            genScript({ type:'importmap', code:[
+                '{',
+                '    "imports": {',
+                '        "Formulate": "../__src__/main.js",',
+                '        "formulateDemo1": "./demo-1.js",',
+                '        "rufflib-validate": "./__rufflib-validate-dist__/rufflib-validate.es.js"',
+                '    }',
+                '}',
+            ]});
+
+            // <script type="module"> import Formulate from 'Formulate'; ...
+            genScript({ type:'module', code:getModernDemoRunnerCode()});
+
+        }
+
+        // Code which legacy browsers use to run the test suite.
+        function getLegacyDemoRunnerCode() {
+            return [
                 "        var Formulate = rufflib.formulate.main;",
                 "        var formulateDemo1 = rufflib.formulate.demo1.formulateDemo1;",
                 "        formulateDemo1(",
@@ -118,32 +192,12 @@
                 "                $form1: document.querySelector('#form-1')",
                 "            }",
                 "        );",
-                "    }",
-                "}()"
-            ]});
-
+            ];
         }
 
-        // Generates three scripts designed to run in the source folder.
-        // This is only used during development, and assumes a modern browser.
-        function genSourceScripts() {
-
-            // <script async src="../shims/es-module-shims.js" />
-            genScript({ async:true, src:'../shims/es-module-shims.js' });
-
-            // <script type="importmap">{ "imports": { ...
-            genScript({ type:'importmap', code:[
-                '{',
-                '    "imports": {',
-                '        "formulateDemo1": "./demo-1.js",',
-                '        "Formulate": "../__src__/main.js",',
-                '        "rufflib-validate": "./__rufflib-validate-dist__/rufflib-validate.es.js"',
-                '    }',
-                '}',
-            ]});
-
-            // <script type="module"> import Formulate from 'Formulate'; ...
-            genScript({ type:'module', code:[
+        // Code which modern browsers use to run the test suite.
+        function getModernDemoRunnerCode() {
+            return [
                 "import Formulate from 'Formulate';",
                 "import { formulateDemo1 } from 'formulateDemo1';",
                 "formulateDemo1(",
@@ -154,8 +208,7 @@
                 "        $form1: document.querySelector('#form-1')",
                 "    }",
                 ");",
-            ]});
-
+            ];
         }
 
     }(document)</script>
