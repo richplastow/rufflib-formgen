@@ -1,7 +1,7 @@
 {
     "name": "rufflib-formulate",
     "version": "0.0.1",
-    "description": "A RuffLIB library for transforming an object schema into an HTML form.",
+    "description": "A RuffLIB library for transforming an object schema into an HTML <form> element.",
     "main": "main.js",
     "type": "module",
     "scripts": {

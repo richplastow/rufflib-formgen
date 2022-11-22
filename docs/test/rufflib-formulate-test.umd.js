@@ -89,7 +89,7 @@
 
   /**
    * Unit tests for rufflib-formulate 0.0.1
-   * A RuffLIB library for transforming an object schema into an HTML form.
+   * A RuffLIB library for transforming an object schema into an HTML <form> element.
    * https://richplastow.com/rufflib-formulate
    * @license MIT
    */
